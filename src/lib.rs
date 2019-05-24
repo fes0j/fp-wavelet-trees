@@ -30,7 +30,7 @@ impl WavletTree {
 }
 
 struct WavletTreeNode {
-    //bio bitmap
+    bit_vec: RankSelect,
     left_child: Box<Option<WavletTreeNode>>,
     right_child: Box<Option<WavletTreeNode>>,
 }
