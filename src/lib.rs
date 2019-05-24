@@ -30,11 +30,20 @@ impl WavletTree {
 }
 
 struct WavletTreeNode {
-    bit_vec: RankSelect,
+    bit_vec: BitVec<u8>,
+    rs: RankSelect,
     left_child: Box<Option<WavletTreeNode>>,
     right_child: Box<Option<WavletTreeNode>>,
 }
 impl WavletTreeNode {
+    fn new(string: Vec<char>, alphabet: Vec<char>) -> Option<WavletTreeNode>{
+        //split alphabet
+        //create bitmap of string lenth
+        //assign bitmap 0/1s and create substrings
+        //create rankselect structure
+        //recusivley create left/right child from substring and partial alphabet
+        None
+    }
     fn select(position: u32, alphabet: Vec<char>){
         //switch on 0/1
         //newpos=rank 0/1
