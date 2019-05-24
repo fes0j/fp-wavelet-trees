@@ -42,3 +42,10 @@ impl WavletTreeNode {
         //recursivley select(newpos,left/right-alphabet
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    //TODO: write tests
+}
