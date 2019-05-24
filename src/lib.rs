@@ -4,10 +4,10 @@ pub struct WavletTree {
 }
 
 impl WavletTree {
-    pub fn new(placeholder: str){
+    pub fn new(placeholder: &str){
         //new tree from parameter
     }
-    pub fn deserialize(placeholder: str){
+    pub fn deserialize(placeholder: &str){
         //deserialize
     }
     pub fn serialize(){
@@ -26,11 +26,11 @@ impl WavletTree {
 
 struct WavletTreeNode {
     //bio bitmap
-    left_child: Option<WavletTreeNode>,
-    right_child: Option<WavletTreeNode>,
+    left_child: Box<Option<WavletTreeNode>>,
+    right_child: Box<Option<WavletTreeNode>>,
 }
 impl WavletTreeNode {
-    fn select(position: u32, alphabet: Vec){
+    fn select(position: u32, alphabet: Vec<char>){
         //switch on 0/1
         //newpos=rank 0/1
         //split alphabet
