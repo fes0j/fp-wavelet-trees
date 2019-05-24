@@ -88,7 +88,7 @@ mod tests {
     #[test]
     fn test_deserialize() {
         let test_string = "abacdc";
-        let w_tree = WaveletTree {};
+        let w_tree = WaveletTree::new(test_string);
         WaveletTree::deserialize(&test_string);
         assert_eq!(0, 0);
     }
