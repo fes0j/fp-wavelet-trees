@@ -4,8 +4,8 @@ use bv::BitsMut;
 
 
 pub struct WaveletTree {
-    //binaryTree
-    //alpahbet
+    root_node: WaveletTreeNode,
+    alphabet: Vec<char>,
 }
 
 impl WaveletTree {
@@ -67,7 +67,7 @@ mod tests {
     fn test_deserialize() {
         let test_string = "abacdc";
         let w_tree = WaveletTree {};
-        WavltTree::deserialize(&test_string);
+        WaveletTree::deserialize(&test_string);
         assert_eq!(0, 0);
     }
 }
