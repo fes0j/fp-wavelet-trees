@@ -15,7 +15,7 @@ impl WavletTree {
     pub fn deserialize(placeholder: &str){
         //deserialize
     }
-    pub fn serialize(){
+    pub fn serialize(&self){
         //serialize
     }
     pub fn access(position: u32){
@@ -44,11 +44,12 @@ impl WavletTreeNode {
         //recusivley create left/right child from substring and partial alphabet
         None
     }
-    fn select(position: u32, alphabet: Vec<char>){
+    fn select(position: u32, alphabet: Vec<char>) -> char{
         //switch on 0/1
         //newpos=rank 0/1
         //split alphabet
         //recursivley select(newpos,left/right-alphabet
+        'a'
     }
 }
 
