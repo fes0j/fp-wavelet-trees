@@ -3,6 +3,7 @@ use bv::BitVec;
 use bv::BitsMut;
 use itertools::Itertools;
 
+#[derive(PartialEq)]
 pub struct WaveletTree {
     root_node: WaveletTreeNode,
     alphabet: Vec<char>,
@@ -95,6 +96,13 @@ impl WaveletTreeNode {
         'a'
     }
 }
+impl PartialEq for WaveletTreeNode {
+    fn eq(&self, other: &WaveletTreeNode) -> bool {
+        self.bit_vec.bits() == other.bit_vec.bits()
+            && self.left_child == other.left_child
+            && self.right_child == other.right_child
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -113,17 +121,23 @@ mod tests {
         let test_string = "ab";
         let w_tree = WaveletTree::new(test_string);
 
-        //        let mut bits: BitVec<u8> = BitVec::new_fill(false, 2);
-        //        bits.set_bit(0, false);
-        //        bits.set_bit(1, true);
-        //
-        //
-        //        let alphabet = vec!['a', 'b'];
-        //        let rs =  RankSelect::new(bits,SUPERBLOCK_SIZE );
-        //        let wavelet_tree_node = WaveletTreeNode { bit_vec: rs, left_child: Box::new(None) ,right_child: Box::new(None)};
-        //        let wavelet_tree = WaveletTree{alphabet: vec!['a', 'b'],root_node:  wavelet_tree_node};
+        let mut bits: BitVec<u8> = BitVec::new_fill(false, 2);
+        bits.set_bit(0, false);
+        bits.set_bit(1, true);
 
-        assert_eq!(w_tree.alphabet, vec!['a', 'b']);
+        let alphabet = vec!['a', 'b'];
+        let rs = RankSelect::new(bits, SUPERBLOCK_SIZE);
+        let wavelet_tree_node = WaveletTreeNode {
+            bit_vec: rs,
+            left_child: Box::new(None),
+            right_child: Box::new(None),
+        };
+        let wavelet_tree = WaveletTree {
+            alphabet: vec!['a', 'b'],
+            root_node: wavelet_tree_node,
+        };
+
+        assert_eq!(w_tree.unwrap(), wavelet_tree);
     }
 
 }
