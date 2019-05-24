@@ -1,3 +1,8 @@
+use bio::data_structures::rank_select::RankSelect;
+use bv::BitVec;
+use bv::BitsMut;
+
+
 pub struct WavletTree {
     //binaryTree
     //alpahbet
