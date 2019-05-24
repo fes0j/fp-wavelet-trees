@@ -69,19 +69,34 @@ impl WaveletTreeNode {
 
 #[cfg(test)]
 mod tests {
+
+    //RankSelect can use different k for the superblocks
+    static SUPERBLOCK_SIZE: usize = 1;
+
     use super::*;
 
     //TODO: write tests
 
 
-    //Test with 4 letters
-    #[ignore]
+    //Test with 2 letters
+
     #[test]
-    fn test_deserialize() {
-        let test_string = "abacdc";
+    fn test_new() {
+        let test_string = "ab";
         let w_tree = WaveletTree::new(test_string);
-        WaveletTree::deserialize(&test_string);
-        assert_eq!(0, 0);
+
+//        let mut bits: BitVec<u8> = BitVec::new_fill(false, 2);
+//        bits.set_bit(0, false);
+//        bits.set_bit(1, true);
+//
+//
+//        let alphabet = vec!['a', 'b'];
+//        let rs =  RankSelect::new(bits,SUPERBLOCK_SIZE );
+//        let wavelet_tree_node = WaveletTreeNode { bit_vec: rs, left_child: Box::new(None) ,right_child: Box::new(None)};
+//        let wavelet_tree = WaveletTree{alphabet: vec!['a', 'b'],root_node:  wavelet_tree_node};
+
+
+        assert_eq!( w_tree.alphabet, vec!['a', 'b']);
     }
 
 }
