@@ -13,7 +13,9 @@ impl WaveletTree {
         //Get distinct characters from string  
         let alphabet: Vec<char> = string.chars().unique().collect();
         //Create tree
-        if let Some(root_node) = WaveletTreeNode::new(string, alphabet){
+        //TEMP signature of WaveletTreeNode::new may change (string: Vec<char> -> &str) and (alphabet: Vec<char> -> &[char])
+        let string_vec = string.chars().collect();
+        if let Some(root_node) = WaveletTreeNode::new(string_vec, alphabet.clone()){
             Some(WaveletTree{root_node, alphabet})
         }else{
             None
@@ -77,7 +79,7 @@ mod tests {
     #[test]
     fn test_deserialize() {
         let test_string = "abacdc";
-        let w_tree = WaveletTree {};
+        let w_tree = WaveletTree::new(test_string);
         WaveletTree::deserialize(&test_string);
         assert_eq!(0, 0);
     }
