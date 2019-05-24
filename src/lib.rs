@@ -9,29 +9,34 @@ pub struct WaveletTree {
 }
 
 impl WaveletTree {
-    pub fn new(placeholder: &str) {
+    pub fn new(placeholder: &str) -> WaveletTree {
         //new tree from parameter
+        
     }
+
     pub fn deserialize(placeholder: &str) {
         //deserialize
     }
+
     pub fn serialize(&self) {
         //serialize
     }
-    pub fn access(position: u32) {
+
+    pub fn access(&self, position: u32) {
         //resolve character at position
     }
-    pub fn select(character: char, n: u32) {
+
+    pub fn select(&self, character: char, n: u32) {
         //return position of n-th character
     }
-    pub fn rank(character: char, n: u32) {
+
+    pub fn rank(&self, character: char, n: u32) {
         //number of characters until position n
     }
 }
 
 struct WaveletTreeNode {
-    bit_vec: BitVec<u8>,
-    rs: RankSelect,
+    bit_vec: RankSelect,
     left_child: Box<Option<WaveletTreeNode>>,
     right_child: Box<Option<WaveletTreeNode>>,
 }
@@ -45,7 +50,7 @@ impl WaveletTreeNode {
         //recusivley create left/right child from substring and partial alphabet
         None
     }
-    fn select(position: u32, alphabet: Vec<char>) -> char {
+    fn select(&self, position: u32, alphabet: Vec<char>) -> char {
         //switch on 0/1
         //newpos=rank 0/1
         //split alphabet
