@@ -11,7 +11,24 @@ pub struct WaveletTree {
 impl WaveletTree {
     pub fn new(placeholder: &str) -> WaveletTree {
         //new tree from parameter
-        
+        let mut alphabet:Vec<char> = Vec::new();
+        for c in placeholder.chars(){
+            if !(alphabet.contains(&c)){
+                alphabet.push(c);
+            }
+        }
+
+        let mut string:Vec<char> = Vec::new();
+        for c in placeholder.chars(){
+            string.push(c);
+        }
+
+        let root_node:WaveletTreeNode = WaveletTreeNode::new(string, alphabet.clone()).unwrap();
+
+        WaveletTree {
+            alphabet,
+            root_node,
+        }
     }
 
     pub fn deserialize(placeholder: &str) {
