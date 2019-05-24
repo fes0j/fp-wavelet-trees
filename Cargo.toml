@@ -5,3 +5,5 @@ authors = ["josef"]
 edition = "2018"
 
 [dependencies]
+bio = "*"
+bv = { version = "0.10", features = ["serde"] }
