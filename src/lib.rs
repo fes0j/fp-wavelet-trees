@@ -1,7 +1,7 @@
 use bio::data_structures::rank_select::RankSelect;
 use bv::BitVec;
 use bv::BitsMut;
-
+use itertools::Itertools;
 
 pub struct WaveletTree {
     root_node: WaveletTreeNode,
@@ -9,9 +9,15 @@ pub struct WaveletTree {
 }
 
 impl WaveletTree {
-    pub fn new(placeholder: &str) -> WaveletTree {
-        //new tree from parameter
-        
+    pub fn new(string: &str) -> Option<WaveletTree> {
+        //Get distinct characters from string  
+        let alphabet: Vec<char> = string.chars().unique().collect();
+        //Create tree
+        if let Some(root_node) = WaveletTreeNode::new(string, alphabet){
+            Some(WaveletTree{root_node, alphabet})
+        }else{
+            None
+        }
     }
 
     pub fn deserialize(placeholder: &str) {
@@ -75,4 +81,5 @@ mod tests {
         WaveletTree::deserialize(&test_string);
         assert_eq!(0, 0);
     }
+
 }
