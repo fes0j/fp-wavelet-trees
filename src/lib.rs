@@ -19,7 +19,7 @@ impl WaveletTree {
         let alphabet: Vec<char> = string.chars().unique().collect();
         //Create tree
         let root_node =
-            WaveletTreeNode::new(string, &alphabet) /* even with an empty string, there should be a node */
+            WaveletTreeNode::new(string.chars().collect(), &alphabet) /* even with an empty string, there should be a node */
                 .expect("Without a tree node the WaveletTree will be useless ");
 
         WaveletTree {
@@ -57,29 +57,27 @@ struct WaveletTreeNode {
 }
 
 impl WaveletTreeNode {
-    fn new(string: &str, alphabet: &[char]) -> Option<WaveletTreeNode> {
+    fn new(input_string: Vec<char>, alphabet: &[char]) -> Option<WaveletTreeNode> {
 
         // When the alphabet only consists of two symbols, no new child nodes are needed.
         // The resulting data would only consist of zeros
         if 2 <= alphabet.len() {
             //split alphabet
             let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
-            //create bitvector of string length
-            let mut bit_vector: BitVec<u8> = BitVec::with_capacity(string.len() as u64);
-            let (left_string, right_string) : Vec<char> = Vec::new();
 
+            //fill partial strings
+            let left_string  =
+                input_string.clone().into_iter().filter(| c| left_alphabet.contains(c)).collect();
+            let right_string  =
+                input_string.clone().into_iter().filter(| c| left_alphabet.contains(c)).collect();
+
+            //create bitvector of string length
+            let mut bitvector: BitVec<u8> = BitVec::with_capacity(input_string.len() as u64);
             //fill bitvector
-            string.chars().foreach(|character| {
-                let is_rightside = right_alphabet.contains(&character);
+            input_string.iter().foreach(|character|
                 //assign bitmap 0/1s
-                bit_vector.push(is_rightside);
-                //fill partial strings
-                if is_rightside {
-                    right_string.push(*character);
-                } else {
-                    left_string.push(*character);
-                }
-            });
+                bitvector.push(right_alphabet.contains(&character))
+            );
 
             //create rankselect structure
             let rs = RankSelect::new(bitvector, SUPERBLOCK_SIZE);
