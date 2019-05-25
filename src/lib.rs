@@ -2,8 +2,9 @@ use bio::data_structures::rank_select::RankSelect;
 use bv::BitVec;
 use bv::BitsMut;
 use itertools::Itertools;
+use std::fmt;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub struct WaveletTree {
     root_node: WaveletTreeNode,
     alphabet: Vec<char>,
@@ -52,6 +53,7 @@ struct WaveletTreeNode {
     left_child: Box<Option<WaveletTreeNode>>,
     right_child: Box<Option<WaveletTreeNode>>,
 }
+
 impl WaveletTreeNode {
     fn new(string: Vec<char>, alphabet: &Vec<char>) -> Option<WaveletTreeNode> {
         if alphabet.len() > 2 {
@@ -96,11 +98,18 @@ impl WaveletTreeNode {
         'a'
     }
 }
+
 impl PartialEq for WaveletTreeNode {
     fn eq(&self, other: &WaveletTreeNode) -> bool {
         self.bit_vec.bits() == other.bit_vec.bits()
             && self.left_child == other.left_child
             && self.right_child == other.right_child
+    }
+}
+
+impl fmt::Debug for WaveletTreeNode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "WaveletTreeNode {{ bit_vec: {:?}}}", self.bit_vec.bits())
     }
 }
 
