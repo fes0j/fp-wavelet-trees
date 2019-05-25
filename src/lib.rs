@@ -63,30 +63,33 @@ impl WaveletTreeNode {
 
         // When the alphabet only consists of two symbols, no new child nodes are needed.
         // The resulting data would only consist of zeros
-        if alphabet.len() > 2 {
+        if 2 <= alphabet.len() {
             //split alphabet
             let string_length = string.len();
             let (l_a, r_a) = alphabet.split_at(alphabet.len() / 2);
             let mut left_alphabet = l_a.to_vec();
             let mut right_alphabet = r_a.to_vec();
             //create bitmap of string lenth
-            let mut bitvector: BitVec<u8> = BitVec::with_capacity(string_length as u64);
+            let mut bit_vector: BitVec<u8> = BitVec::with_capacity(string_length as u64);
             let mut left_string: Vec<char> = Vec::new();
             let mut right_string: Vec<char> = Vec::new();
-            for i in 0..string_length {
+
+            // "Map" each char to its place in the bit_vector
+            string.iter().foreach(|character| {
+                let is_rightside = right_alphabet.contains(character);
                 //assign bitmap 0/1s
-                let c = string.get(i).unwrap();
-                let bl = r_a.contains(c);
-                bitvector.set_bit(i as u64, bl);
+                bit_vector.push(is_rightside);
                 //fill partial strings
-                if bl {
-                    right_string.push(*c);
+                if is_rightside {
+                    right_string.push(*character);
                 } else {
-                    left_string.push(*c);
+                    left_string.push(*character);
                 }
-            }
+            });
+
+
             //create rankselect structure
-            let rs = RankSelect::new(bitvector, SUPERBLOCK_SIZE);
+            let rs = RankSelect::new(bit_vector, SUPERBLOCK_SIZE);
             Some(WaveletTreeNode {
                 bit_vec: rs,
                 //recusivley create left/right child from substring and partial alphabet
@@ -94,19 +97,7 @@ impl WaveletTreeNode {
                 right_child: Box::new(WaveletTreeNode::new(right_string, &right_alphabet)),
             })
         } else {
-            let mut bit_vector: BitVec<u8> = BitVec::with_capacity(string.len() as u64);
-            // Split alphabet in half, even tough we are now only interested in one symbol
-            let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
-            // "Map" each char to its place in the bit_vector
-            string.iter().foreach(|x| { bit_vector.push(right_alphabet.contains(x)) });
-            let rs = RankSelect::new(bit_vector, SUPERBLOCK_SIZE);
-
-            ///create last node, where only the vector is needed
-            Some(WaveletTreeNode {
-                bit_vec: rs,
-                left_child: Box::new(None),
-                right_child: Box::new(None),
-            })
+            None
         }
     }
     fn select(&self, position: u32, alphabet: Vec<char>) -> char {
@@ -159,9 +150,31 @@ mod tests {
     }
 
 
+    /// # Test with five letters
+    /// This will test alphabet and child nodes.
+    /// The RankSelect Vector will also be tested.
+    ///
+    #[test]
+    fn test_5_letter_tree() {
+        let input_string = "abcda";
+        let five_tree: WaveletTree = WaveletTree::new(input_string);
+        let alphabet: Vec<char> = input_string.chars().unique().collect();
+
+        assert_eq!(five_tree.alphabet, alphabet);
+
+
+        // To Test the bit vector, we create our one (the expected one).
+        let mut bits: BitVec<u8> = BitVec::new_fill(false, 5);
+        //Now set the remaining bits
+        bits.set_bit(2, true);
+        bits.set_bit(3, true);
+
+        assert_eq!(*five_tree.root_node.bit_vec.bits(), bits);
+    }
+
+
     /// Testing tests
     #[test]
-    #[ignore]
     fn test_new() {
         let test_string = "abc";
         let w_tree = WaveletTree::new(test_string);
