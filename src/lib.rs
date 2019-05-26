@@ -36,16 +36,19 @@ impl WaveletTree {
         //serialize
     }
 
-    pub fn access(&self, position: u32) {
+    pub fn access(&self, position: u32) -> Option<char> {
         //resolve character at position
+        None
     }
 
-    pub fn select(&self, character: char, n: u32) {
+    pub fn select(&self, character: char, n: u32) -> Option<u32> {
         //return position of n-th character
+        None
     }
 
-    pub fn rank(&self, character: char, n: u32) {
+    pub fn rank(&self, character: char, n: u32) -> Option<u32> {
         //number of characters until position n
+        None
     }
 }
 
@@ -202,6 +205,34 @@ mod tests {
             root_node: wavelet_tree_node,
         };
 
-        //assert_eq!(w_tree.unwrap(), wavelet_tree);
+        assert_eq!(w_tree, wavelet_tree);
+    }
+
+    #[test]
+    fn test_access_empty() {
+        let test_string = "";
+        let w_tree = WaveletTree::new(test_string);
+
+        assert_eq!(test_string.chars().nth(0), w_tree.access(0));
+    }
+
+    #[test]
+    fn test_access_1_letter() {
+        let test_string = "a";
+        let w_tree = WaveletTree::new(test_string);
+
+        assert_eq!(test_string.chars().nth(0), w_tree.access(0));
+        assert_eq!(test_string.chars().nth(1), w_tree.access(1));
+    }
+
+    #[test]
+    fn test_access_5_letter() {
+        let test_string = "abcde";
+        let w_tree = WaveletTree::new(test_string);
+
+        assert_eq!(test_string.chars().nth(0), w_tree.access(0));
+        assert_eq!(test_string.chars().nth(2), w_tree.access(2));
+        assert_eq!(test_string.chars().nth(4), w_tree.access(4));
+        assert_eq!(test_string.chars().nth(5), w_tree.access(5));
     }
 }
