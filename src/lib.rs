@@ -69,7 +69,7 @@ impl WaveletTreeNode {
             let left_string  =
                 input_string.clone().into_iter().filter(| c| left_alphabet.contains(c)).collect();
             let right_string  =
-                input_string.clone().into_iter().filter(| c| left_alphabet.contains(c)).collect();
+                input_string.clone().into_iter().filter(| c| right_alphabet.contains(c)).collect();
 
             //create bitvector of string length
             let mut bitvector: BitVec<u8> = BitVec::with_capacity(input_string.len() as u64);
@@ -125,7 +125,6 @@ impl fmt::Debug for WaveletTreeNode {
 mod tests {
     use super::*;
 
-
     /// # Test with two different letters
     /// This will test for alphabet and child nodes.
     /// The RankSelect Vector will also be tested.
@@ -168,6 +167,16 @@ mod tests {
         bits.set_bit(3, true);
 
         assert_eq!(*five_tree.root_node.bit_vec.bits(), bits);
+
+        // Test if the left node has the correct data for aba
+        let left_child = five_tree.root_node.left_child.unwrap();
+        let left_child_bits = BitVec::from_bits(&[false,true,false]);
+        assert_eq!(*left_child.bit_vec.bits(), left_child_bits);
+
+        // Test if the right node has the correct data for cd
+        let right_child = five_tree.root_node.right_child.unwrap();
+        let right_child_bits = BitVec::from_bits(&[false,true]);
+        assert_eq!(*right_child.bit_vec.bits(), right_child_bits);
     }
 
 
