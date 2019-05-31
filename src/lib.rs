@@ -9,7 +9,7 @@ static SUPERBLOCK_SIZE: usize = 1;
 
 #[derive(PartialEq, Debug)]
 pub struct WaveletTree {
-    root_node: WaveletTreeNode,
+    root_node: Box<WaveletTreeNode>,
     alphabet: Vec<char>,
 }
 
@@ -23,11 +23,11 @@ impl WaveletTree {
                 root_node: {
                     let mut bitvector = BitVec::new();
                     bitvector.resize(string.len() as u64, true);
-                    WaveletTreeNode {
+                    Box::new(WaveletTreeNode {
                         bit_vec: RankSelect::new(bitvector, SUPERBLOCK_SIZE),
-                        left_child: Box::new(None),
-                        right_child: Box::new(None),
-                    }
+                        left_child: None,
+                        right_child: None,
+                    })
                 },
                 alphabet,
             };
@@ -69,12 +69,12 @@ impl WaveletTree {
 //This will be the tree structure itself, with the bit vector as data
 struct WaveletTreeNode {
     bit_vec: RankSelect,
-    left_child: Box<Option<WaveletTreeNode>>,
-    right_child: Box<Option<WaveletTreeNode>>,
+    left_child: Option<Box<WaveletTreeNode>>,
+    right_child: Option<Box<WaveletTreeNode>>,
 }
 
 impl WaveletTreeNode {
-    fn new(input_string: Vec<char>, alphabet: &[char]) -> Option<WaveletTreeNode> {
+    fn new(input_string: Vec<char>, alphabet: &[char]) -> Option<Box<WaveletTreeNode>> {
         // When the alphabet only consists of two symbols, no new child nodes are needed.
         // The resulting data would only consist of zeros
         if 2 <= alphabet.len() {
@@ -102,12 +102,12 @@ impl WaveletTreeNode {
 
             //create rankselect structure
             let rs = RankSelect::new(bitvector, SUPERBLOCK_SIZE);
-            Some(WaveletTreeNode {
+            Some(Box::new(WaveletTreeNode {
                 bit_vec: rs,
                 //recusivley create left/right child from substring and partial alphabet
-                left_child: Box::new(WaveletTreeNode::new(left_string, &left_alphabet)),
-                right_child: Box::new(WaveletTreeNode::new(right_string, &right_alphabet)),
-            })
+                left_child: WaveletTreeNode::new(left_string, &left_alphabet),
+                right_child: WaveletTreeNode::new(right_string, &right_alphabet),
+            }))
         } else {
             //edge case of an empty or single char string is handleled in WaveletTree::new
             None
@@ -143,12 +143,28 @@ impl WaveletTreeNode {
         }
     }
 
-    fn select(&self, position: u32, alphabet: Vec<char>) -> char {
-        //switch on 0/1
-        //newpos=rank 0/1
+    pub fn select(&self, character: char, n: u32, alphabet: &[char]) -> Option<u64> {
+        //return: position of nth character in current node
         //split alphabet
-        //recursivley select(newpos,left/right-alphabet
-        'a'
+        let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
+        
+        if left_alphabet.contains(&character) {
+            //posinchild is the position of the nth character in the left child
+            let pos_in_child = match &self.left_child{
+                None => None,
+                Some(c) => c.select(character, n, left_alphabet)
+            };
+            //find the position of the nth char in current node from pos_in_child
+            self.bit_vec.select_0(pos_in_child.unwrap())
+        }else{//same on the right side...
+            //posinchild is the position of the nth character in the left child
+            let pos_in_child = match &self.right_child{
+                None => None,
+                Some(c) => c.select(character, n, right_alphabet)
+            };
+            //find the position of the nth char in current node from pos_in_child
+            self.bit_vec.select_0(pos_in_child.unwrap())
+        }
     }
 }
 
