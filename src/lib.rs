@@ -55,9 +55,8 @@ impl WaveletTree {
         self.root_node.access(position, &self.alphabet[..])
     }
 
-    pub fn select(&self, character: char, n: u32) -> Option<u32> {
-        //return position of n-th character
-        None
+    pub fn select(&mut self, character: char, n: u64) -> Option<u64> {
+        self.root_node.select(character,n,&self.alphabet[..])
     }
 
     pub fn rank(&self, character: char, n: u32) -> Option<u32> {
@@ -143,12 +142,51 @@ impl WaveletTreeNode {
         }
     }
 
-    fn select(&self, position: u32, alphabet: Vec<char>) -> char {
-        //switch on 0/1
-        //newpos=rank 0/1
+    fn select(&mut self, character: char ,n: u64, alphabet: &[char]) -> Option<u64> {
+        //output: position of nth character
         //split alphabet
-        //recursivley select(newpos,left/right-alphabet
-        'a'
+        let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
+        //if left alphabet contains character
+        if left_alphabet.contains(&character) {
+            if left_alphabet.len()==1 {
+                self.bit_vec.select_0(n)
+            }else{
+                //take the child out of the option
+                let mut lc = self.left_child.take();
+                let mut lc =lc.unwrap();
+                //posinchild is the position of the nth character in the left child
+                let pos_in_child = lc.select(character,n,left_alphabet);
+                //put the child back in to the option
+                let ignore=self.left_child.replace(lc);
+                //pos in current is the position of the nth character in the current node
+                match pos_in_child{//+1 because recursive step returned an index while the #of occurences is needed
+                    Some(x) => self.bit_vec.select_0(x+1),
+                    None => None
+                }
+            }
+        }else if right_alphabet.contains(&character){
+            if right_alphabet.len()==1 {
+                self.bit_vec.select_1(n)
+            }else{
+                //take the child out of the option
+                let mut rc = self.right_child.take();
+                let mut rc = rc.unwrap();
+                //posinchild is the position of the nth character in the left child
+                let pos_in_child = rc.select(character,n,right_alphabet);
+                //put the child back in to the option
+                let ignore=self.right_child.replace(rc);
+                //pos in current is the position of the nth character in the current node
+                match pos_in_child{//+1 because recursive step returned an index while the #of occurences is needed
+                    Some(x) => self.bit_vec.select_1(x+1),
+                    None => None
+                }
+            }
+        }else{None}
+    }
+    
+    //helper to split the node up
+    fn split_up(self) -> (RankSelect,Option<Box<WaveletTreeNode>>,Option<Box<WaveletTreeNode>>){
+        (self.bit_vec,self.right_child,self.left_child)
     }
 }
 
@@ -284,10 +322,10 @@ mod tests {
     //Test for select if it goes out of bounds or mishandels missing chars
     #[test]
     fn test_select(){
-        let test_string = "cabdacdbabadcab";
-        let w_tree = WaveletTree::new(test_string);
+        let test_string = "abcbb";
+        let mut w_tree = WaveletTree::new(test_string);
         
-        assert_eq!(w_tree.select('a',2),Some(4));
+        assert_eq!(w_tree.select('b',2),Some(3));
         assert_eq!(w_tree.select('a',6),None);
         assert_eq!(w_tree.select('f',2),None);
     }
