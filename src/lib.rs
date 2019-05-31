@@ -38,6 +38,8 @@ impl WaveletTree {
 
     pub fn access(&self, position: u32) -> Option<char> {
         //resolve character at position
+        //split left/right alphabet
+        //check for 0/1
         None
     }
 
@@ -92,6 +94,28 @@ impl WaveletTreeNode {
             })
         } else {
             None
+        }
+    }
+    
+    fn access(&self, position: u64, alphabet: &[char]) -> Option<char>{
+        //check if position is valid
+        if self.bit_vec.bits().len()<=position {return None}
+        //split alphabet
+        let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
+        //if length of alphabet is 2 return left/right char
+        if alphabet.len()==2 {
+            //switch on 0/1
+            match self.bit_vec.bits()[position]{
+                false => Some(left_alphabet[0]),
+                true => Some(right_alphabet[0])
+            }
+        }else{//alphabet is longer
+            //recursivley access(rank0/1,left/right-alphabet)
+            match self.bit_vec.bits()[position]{
+                //unwrap must be safe caus position is valid
+                false => self.access(self.bit_vec.rank_0(position).unwrap(),&left_alphabet),
+                true => self.access(self.bit_vec.rank_1(position).unwrap(),&right_alphabet),
+            }
         }
     }
 
