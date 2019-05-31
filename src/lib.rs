@@ -280,4 +280,15 @@ mod tests {
         assert_eq!(test_string.chars().nth(4), w_tree.access(4));
         assert_eq!(test_string.chars().nth(5), w_tree.access(5));
     }
+    
+    //Test for select if it goes out of bounds or mishandels missing chars
+    #[test]
+    fn test_select(){
+        let test_string = "cabdacdbabadcab";
+        let w_tree = WaveletTree::new(test_string);
+        
+        assert_eq!(w_tree.select('a',2),Some(4));
+        assert_eq!(w_tree.select('a',6),None);
+        assert_eq!(w_tree.select('f',2),None);
+    }
 }
