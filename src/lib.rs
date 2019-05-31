@@ -55,9 +55,8 @@ impl WaveletTree {
         self.root_node.access(position, &self.alphabet[..])
     }
 
-    pub fn select(&self, character: char, n: u32) -> Option<u32> {
-        //return position of n-th character
-        None
+    pub fn select(&self, character: char, n: u32) -> Option<u64> {
+        self.root_node.select(character,n,&self.alphabet[..])
     }
 
     pub fn rank(&self, character: char, n: u32) -> Option<u32> {
@@ -163,7 +162,7 @@ impl WaveletTreeNode {
                 Some(c) => c.select(character, n, right_alphabet)
             };
             //find the position of the nth char in current node from pos_in_child
-            self.bit_vec.select_0(pos_in_child.unwrap())
+            self.bit_vec.select_1(pos_in_child.unwrap())
         }
     }
 }
