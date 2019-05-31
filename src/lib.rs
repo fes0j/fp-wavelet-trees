@@ -58,9 +58,11 @@ impl WaveletTree {
     pub fn select(&self, character: char, n: u64) -> Option<u64> {
         //find leaf with the given char
         //return position of n-th character
-        if self.alphabet.clone().into_iter().filter(|c| *c == character).count() < n as usize {
+        if self.alphabet.clone().into_iter().filter(|c| *c == character).count() == 0 {
             return None;
         }
+
+        //TODO: fix for test "test_select"
 
         // contains the path from the root to the leaf with the char 'character'
         let mut path:Vec<WaveletTreeNode> = vec![self.root_node.clone()];
@@ -343,13 +345,13 @@ mod tests {
         assert_eq!(test_string.chars().nth(4), w_tree.access(4));
         assert_eq!(test_string.chars().nth(5), w_tree.access(5));
     }
-    
+
     //Test for select if it goes out of bounds or mishandels missing chars
     #[test]
     fn test_select(){
         let test_string = "cabdacdbabadcab";
         let w_tree = WaveletTree::new(test_string);
-        
+
         assert_eq!(w_tree.select('a',2),Some(4));
         assert_eq!(w_tree.select('a',6),None);
         assert_eq!(w_tree.select('f',2),None);
