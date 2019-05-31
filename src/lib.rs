@@ -55,7 +55,7 @@ impl WaveletTree {
         self.root_node.access(position, &self.alphabet[..])
     }
 
-    pub fn select(&self, character: char, n: u32) -> Option<u64> {
+    pub fn select(&self, character: char, n: u64) -> Option<u64> {
         self.root_node.select(character,n,&self.alphabet[..])
     }
 
@@ -142,28 +142,48 @@ impl WaveletTreeNode {
         }
     }
 
-    pub fn select(&self, character: char, n: u32, alphabet: &[char]) -> Option<u64> {
+    pub fn select(&self, character: char, n: u64, alphabet: &[char]) -> Option<u64> {
         //return: position of nth character in current node
         //split alphabet
         let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
-        
+        assert!(left_alphabet.contains(&character) || right_alphabet.contains(&character));
         if left_alphabet.contains(&character) {
-            //posinchild is the position of the nth character in the left child
-            let pos_in_child = match &self.left_child{
-                None => None,
-                Some(c) => c.select(character, n, left_alphabet)
-            };
-            //find the position of the nth char in current node from pos_in_child
-            self.bit_vec.select_0(pos_in_child.unwrap())
-        }else{//same on the right side...
-            //posinchild is the position of the nth character in the left child
-            let pos_in_child = match &self.right_child{
-                None => None,
-                Some(c) => c.select(character, n, right_alphabet)
-            };
-            //find the position of the nth char in current node from pos_in_child
-            self.bit_vec.select_1(pos_in_child.unwrap())
-        }
+            //case of the last layer where the position will be a direct select
+            if alphabet.len()==1 {
+                //assert!(self.bit_vec.select_0(n).is_some());
+                self.bit_vec.select_0(n)
+            }else{
+                //posinchild is the position of the nth character in the left child
+                let pos_in_child = match (&self.left_child){//pos_in_child
+                    None => None,
+                    Some(ref c) => Some(c.select(character, n, left_alphabet))
+                };
+                //assert!(pos_in_child.is_none());
+                //find the position of the nth char in current node from pos_in_child
+                let ret=match pos_in_child{
+                    None => None,
+                    Some(n) => self.bit_vec.select_0(n.unwrap())
+                };
+                assert!(ret.is_none());
+                ret
+            }
+        }else if right_alphabet.contains(&character){//same on the right side...
+            //case of the last layer where the position will be a direct select
+            if alphabet.len()==1 {
+                self.bit_vec.select_1(n)
+            }else{
+                //posinchild is the position of the nth character in the left child
+                let pos_in_child = match &self.right_child{
+                    None => None,
+                    Some(c) => c.select(character, n, right_alphabet)
+                };
+                //find the position of the nth char in current node from pos_in_child
+                match pos_in_child{
+                    None => None,
+                    Some(n) => self.bit_vec.select_1(n)
+                }
+            }
+        }else{None}//fallback for charactrs outside of the alphabet
     }
 }
 
@@ -201,8 +221,8 @@ mod tests {
         let alphabet: Vec<char> = "ab".chars().collect();
 
         assert_eq!(two_tree.alphabet, alphabet);
-        assert_eq!(two_tree.root_node.right_child, Box::new(None));
-        assert_eq!(two_tree.root_node.left_child, Box::new(None));
+        assert_eq!(two_tree.root_node.right_child, None);
+        assert_eq!(two_tree.root_node.left_child, None);
 
         // To Test the bit vector, we create our one (the expected one).
         let mut bits: BitVec<u8> = BitVec::new_fill(false, 2);
@@ -257,12 +277,12 @@ mod tests {
         let rs = RankSelect::new(bits, SUPERBLOCK_SIZE);
         let wavelet_tree_node = WaveletTreeNode {
             bit_vec: rs,
-            left_child: Box::new(None),
-            right_child: Box::new(None),
+            left_child: None,
+            right_child: None,
         };
         let wavelet_tree = WaveletTree {
             alphabet: vec!['a', 'b'],
-            root_node: wavelet_tree_node,
+            root_node: Box::new(wavelet_tree_node),
         };
 
         assert_eq!(w_tree, wavelet_tree);
@@ -296,14 +316,30 @@ mod tests {
         assert_eq!(test_string.chars().nth(5), w_tree.access(5));
     }
     
-    //Test for select if it goes out of bounds or mishandels missing chars
+    //Simple Test for select
     #[test]
-    fn test_select(){
+    fn test_select_basic(){
         let test_string = "cabdacdbabadcab";
         let w_tree = WaveletTree::new(test_string);
         
-        assert_eq!(w_tree.select('a',2),Some(4));
-        assert_eq!(w_tree.select('a',6),None);
+        assert_eq!(w_tree.select('c',2),Some(4));
+    }
+    
+    //Test for a character outside the alphabet
+    #[test]
+    fn test_select_outside_alphabet(){
+        let test_string = "cabdacdbabadcab";
+        let w_tree = WaveletTree::new(test_string);
+        
         assert_eq!(w_tree.select('f',2),None);
+    }
+    
+    //Test for a character out of bounds
+    #[test]
+    fn test_select_out_of_bounds(){
+        let test_string = "cabdacdbabadcab";
+        let w_tree = WaveletTree::new(test_string);
+        
+        assert_eq!(w_tree.select('a',6),None);
     }
 }
