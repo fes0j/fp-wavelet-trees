@@ -41,9 +41,60 @@ impl WaveletTree {
         None
     }
 
-    pub fn select(&self, character: char, n: u32) -> Option<u32> {
+    pub fn select(&self, character: char, n: u64) -> Option<u64> {
+        //find leaf with the given char
         //return position of n-th character
-        None
+        if self.alphabet.clone().into_iter().filter(|c| *c == character).count() < n as usize {
+            return None;
+        }
+
+        // contains the path from the root to the leaf with the char 'character'
+        let mut path:Vec<WaveletTreeNode> = vec![self.root_node.clone()];
+        let (left_alphabet, right_alphabet) = self.alphabet.split_at(self.alphabet.len() / 2);
+        let mut alphabet = if left_alphabet.contains(&character) {
+            path.push(path.last().unwrap().left_child.clone().unwrap());
+            left_alphabet
+        }
+        else {
+            path.push(path.last().unwrap().right_child.clone().unwrap());
+            right_alphabet
+        };
+        while alphabet.into_iter().filter(|&c| *c == character).count() != alphabet.len()
+        && alphabet.len() > 2 {
+            let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
+            alphabet = if left_alphabet.contains(&character) {
+                path.push(path.last().unwrap().left_child.clone().unwrap());
+                left_alphabet
+            }
+            else {
+                path.push(path.last().unwrap().right_child.clone().unwrap());
+                right_alphabet
+            };
+        }
+
+        //the alphabet now contains two different chars; need to find out if select_1() or select_0()
+        let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
+        //select_0() first
+        let mut i = n;
+        let mut node = path.pop();
+        if node != None && left_alphabet.contains(&character) {
+            i = node.unwrap().bit_vec.select_0(i).unwrap();
+        }
+        //select_1() first
+        else {
+            i = node.unwrap().bit_vec.select_1(i).unwrap();
+        }
+        node = path.pop();
+        while node != None &&  node.clone().unwrap() != self.root_node {
+            if node.clone().unwrap() == path.last().unwrap().left_child.clone().unwrap() {
+                i = node.unwrap().bit_vec.select_0(i).unwrap();
+            }
+            else {
+                i = node.unwrap().bit_vec.select_1(i).unwrap();
+            }
+            node = path.pop();
+        }
+        Some(i)
     }
 
     pub fn rank(&self, character: char, n: u32) -> Option<u32> {
@@ -95,7 +146,7 @@ impl WaveletTreeNode {
         }
     }
 
-    fn select(&self, position: u32, alphabet: Vec<char>) -> char {
+    fn select(&self, character: char, n: u32) -> char {
         //switch on 0/1
         //newpos=rank 0/1
         //split alphabet
@@ -121,6 +172,18 @@ impl fmt::Debug for WaveletTreeNode {
             self.left_child,
             self.right_child
         )
+    }
+}
+
+impl Clone for WaveletTreeNode {
+    fn clone(&self) -> WaveletTreeNode {
+        let bitvector: BitVec<u8> = (*self.bit_vec.bits()).clone();
+        let rs = RankSelect::new(bitvector, self.bit_vec.k());
+        WaveletTreeNode{
+            bit_vec: rs,
+            left_child: self.left_child.clone(),
+            right_child: self.right_child.clone(),
+        }
     }
 }
 
@@ -234,5 +297,13 @@ mod tests {
         assert_eq!(test_string.chars().nth(2), w_tree.access(2));
         assert_eq!(test_string.chars().nth(4), w_tree.access(4));
         assert_eq!(test_string.chars().nth(5), w_tree.access(5));
+    }
+
+    #[test]
+    fn test_select_5_letter() {
+        let test_string = "abcde";
+        let w_tree = WaveletTree::new(test_string);
+
+        assert_eq!(0, w_tree.select('a', 1).unwrap());
     }
 }
