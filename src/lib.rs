@@ -55,62 +55,89 @@ impl WaveletTree {
         self.root_node.access(position, &self.alphabet[..])
     }
 
+
     pub fn select(&self, character: char, n: u64) -> Option<u64> {
-        //find leaf with the given char
-        //return position of n-th character
+        // check if the character is valid
         if self.alphabet.clone().into_iter().filter(|c| *c == character).count() == 0 {
             return None;
         }
 
-        //TODO: fix for test "test_select"
+        // contains the path nodes from the root to the leaf with the char 'character'
+        let mut path_nodes:Vec<WaveletTreeNode> = vec![self.root_node.clone()];
+        // contains the path from the root to the leaf with the char 'character' (either 'l' or 'r')
+        let mut path:Vec<char> = vec![];
 
-        // contains the path from the root to the leaf with the char 'character'
-        let mut path:Vec<WaveletTreeNode> = vec![self.root_node.clone()];
         let (left_alphabet, right_alphabet) = self.alphabet.split_at(self.alphabet.len() / 2);
         let mut alphabet = if left_alphabet.contains(&character) {
-            path.push(path.last().unwrap().left_child.clone().unwrap());
+            if left_alphabet.len() >= 2 {
+                path_nodes.push(path_nodes.last().unwrap().left_child.clone().unwrap());
+                path.push('l');
+            }
             left_alphabet
         }
         else {
-            path.push(path.last().unwrap().right_child.clone().unwrap());
+            if right_alphabet.len() >= 2 {
+                path_nodes.push(path_nodes.last().unwrap().right_child.clone().unwrap());
+                path.push('r');
+            }
             right_alphabet
         };
-        while alphabet.into_iter().filter(|&c| *c == character).count() != alphabet.len()
-        && alphabet.len() > 2 {
+        while alphabet.len() > 2 {
             let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
             alphabet = if left_alphabet.contains(&character) {
-                path.push(path.last().unwrap().left_child.clone().unwrap());
+                if left_alphabet.len() >= 2 {
+                    path_nodes.push(path_nodes.last().unwrap().left_child.clone().unwrap());
+                    path.push('l');
+                }
                 left_alphabet
             }
             else {
-                path.push(path.last().unwrap().right_child.clone().unwrap());
+                if right_alphabet.len() >= 2 {
+                    path_nodes.push(path_nodes.last().unwrap().right_child.clone().unwrap());
+                    path.push('r');
+                }
                 right_alphabet
             };
         }
 
-        //the alphabet now contains two different chars; need to find out if select_1() or select_0()
-        let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
-        //select_0() first
-        let mut i = n;
-        let mut node = path.pop();
-        if node != None && left_alphabet.contains(&character) {
-            i = node.unwrap().bit_vec.select_0(i).unwrap();
+
+
+        let mut i = None;
+        let mut node = path_nodes.pop();
+        let mut direction = path.pop();
+        let (left_alphabet, right_alphabet) = if direction != None {
+            alphabet.split_at(alphabet.len() / 2)
         }
-        //select_1() first
         else {
-            i = node.unwrap().bit_vec.select_1(i).unwrap();
-        }
-        node = path.pop();
-        while node != None &&  node.clone().unwrap() != self.root_node {
-            if node.clone().unwrap() == path.last().unwrap().left_child.clone().unwrap() {
-                i = node.unwrap().bit_vec.select_0(i).unwrap();
+            (left_alphabet,right_alphabet)
+        };
+
+        if  node != None {
+            if left_alphabet.len() == 0 {
+                i = Some(n-1);
+            }
+            else if left_alphabet.contains(&character) {
+                i = node.unwrap().bit_vec.select_0(n);
             }
             else {
-                i = node.unwrap().bit_vec.select_1(i).unwrap();
+                i = node.unwrap().bit_vec.select_1(n);
             }
-            node = path.pop();
         }
-        Some(i)
+
+        node = path_nodes.pop();
+
+        while direction != None && node != None && i != None {
+            if direction.unwrap() == 'l' {
+                i = node.unwrap().bit_vec.select_0(i.unwrap()+1);
+            }
+            else {
+                i = node.unwrap().bit_vec.select_1(i.unwrap()+1);
+            }
+            direction = path.pop();
+            node = path_nodes.pop();
+        }
+        // return the value of i as an index [0...]
+        i
     }
 
     pub fn rank(&self, character: char, n: u32) -> Option<u32> {
@@ -195,14 +222,6 @@ impl WaveletTreeNode {
             }
         }
     }
-
-    fn select(&self, position: u32, alphabet: Vec<char>) -> char {
-        //switch on 0/1
-        //newpos=rank 0/1
-        //split alphabet
-        //recursivley select(newpos,left/right-alphabet
-        'a'
-    }
 }
 
 impl PartialEq for WaveletTreeNode {
@@ -217,7 +236,7 @@ impl fmt::Debug for WaveletTreeNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "WaveletTreeNode {{ {:?}, r:{:?} l:{:?} }}",
+            "WaveletTreeNode {{ {:?}, l:{:?} r:{:?} }}",
             self.bit_vec.bits(),
             self.left_child,
             self.right_child
@@ -362,6 +381,22 @@ mod tests {
         let test_string = "abcde";
         let w_tree = WaveletTree::new(test_string);
 
-        assert_eq!(0, w_tree.select('a', 1).unwrap());
+        assert_eq!(w_tree.select('a', 1),Some(0));
+        assert_eq!(w_tree.select('b', 1),Some(1));
+        assert_eq!(w_tree.select('c', 1),Some(2));
+        assert_eq!(w_tree.select('d', 1),Some(3));
+        assert_eq!(w_tree.select('e', 1),Some(4));
+    }
+
+    #[test]
+    fn test_select_2_letter() {
+        let test_string = "ab";
+        let w_tree = WaveletTree::new(test_string);
+
+        assert_eq!(w_tree.select('a', 1),Some(0));
+        assert_eq!(w_tree.select('b', 1),Some(1));
+        assert_eq!(w_tree.select('c', 1),None);
+        assert_eq!(w_tree.select('a', 2),None);
+        assert_eq!(w_tree.select('b', 3),None);
     }
 }
