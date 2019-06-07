@@ -3,11 +3,12 @@ use bv::BitVec;
 use bv::BitsMut;
 use itertools::Itertools;
 use std::fmt;
+use serde::{Serialize, Deserialize};
 
 ///RankSelect can use different k for the superblocks
 static SUPERBLOCK_SIZE: usize = 1;
 
-#[derive(PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct WaveletTree {
     root_node: WaveletTreeNode,
     alphabet: Vec<char>,
@@ -43,20 +44,12 @@ impl WaveletTree {
         }
     }
 
-    pub fn deserialize(placeholder: &str) {
-        //deserialize
-    }
-
-    pub fn serialize(&self) {
-        //serialize
-    }
-
     pub fn access(&self, position: u64) -> Option<char> {
         self.root_node.access(position, &self.alphabet[..])
     }
 
     pub fn select(&self, character: char, n: u32) -> Option<u32> {
-        //return position of n-th character
+        //return position of n-th charac ter
         None
     }
 
@@ -67,6 +60,7 @@ impl WaveletTree {
 }
 
 //This will be the tree structure itself, with the bit vector as data
+#[derive(Serialize, Deserialize)]
 struct WaveletTreeNode {
     bit_vec: RankSelect,
     left_child: Box<Option<WaveletTreeNode>>,
