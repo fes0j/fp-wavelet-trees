@@ -48,7 +48,7 @@ impl WaveletTree {
         self.root_node.access(position, &self.alphabet[..])
     }
 
-    pub fn select(&self, character: char, n: u64) -> Option<u64> {
+    pub fn select(&mut self, character: char, n: u64) -> Option<u64> {
         self.root_node.select(character,n,&self.alphabet[..])
     }
 
@@ -136,48 +136,46 @@ impl WaveletTreeNode {
         }
     }
 
-    pub fn select(&self, character: char, n: u64, alphabet: &[char]) -> Option<u64> {
-        //return: position of nth character in current node
+    fn select(&mut self, character: char ,n: u64, alphabet: &[char]) -> Option<u64> {
+        //output: position of nth character
         //split alphabet
         let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
-        assert!(left_alphabet.contains(&character) || right_alphabet.contains(&character));
+        //if left alphabet contains character
         if left_alphabet.contains(&character) {
-            //case of the last layer where the position will be a direct select
-            if alphabet.len()==1 {
-                //assert!(self.bit_vec.select_0(n).is_some());
+            if left_alphabet.len()==1 {
                 self.bit_vec.select_0(n)
             }else{
+                //take the child out of the option
+                let lc = self.left_child.take();
+                let mut lc =lc.unwrap();
                 //posinchild is the position of the nth character in the left child
-                let pos_in_child = match (&self.left_child){//pos_in_child
-                    None => None,
-                    Some(ref c) => Some(c.select(character, n, left_alphabet))
-                };
-                //assert!(pos_in_child.is_none());
-                //find the position of the nth char in current node from pos_in_child
-                let ret=match pos_in_child{
-                    None => None,
-                    Some(n) => self.bit_vec.select_0(n.unwrap())
-                };
-                assert!(ret.is_none());
-                ret
-            }
-        }else if right_alphabet.contains(&character){//same on the right side...
-            //case of the last layer where the position will be a direct select
-            if alphabet.len()==1 {
-                self.bit_vec.select_1(n)
-            }else{
-                //posinchild is the position of the nth character in the left child
-                let pos_in_child = match &self.right_child{
-                    None => None,
-                    Some(c) => c.select(character, n, right_alphabet)
-                };
-                //find the position of the nth char in current node from pos_in_child
-                match pos_in_child{
-                    None => None,
-                    Some(n) => self.bit_vec.select_1(n)
+                let pos_in_child = lc.select(character,n,left_alphabet);
+                //put the child back in to the option
+                let _ignore=self.left_child.replace(lc);
+                //pos in current is the position of the nth character in the current node
+                match pos_in_child{//+1 because recursive step returned an index while the #of occurences is needed
+                    Some(x) => self.bit_vec.select_0(x+1),
+                    None => None
                 }
             }
-        }else{None}//fallback for charactrs outside of the alphabet
+        }else if right_alphabet.contains(&character){
+            if right_alphabet.len()==1 {
+                self.bit_vec.select_1(n)
+            }else{
+                //take the child out of the option
+                let rc = self.right_child.take();
+                let mut rc = rc.unwrap();
+                //posinchild is the position of the nth character in the left child
+                let pos_in_child = rc.select(character,n,right_alphabet);
+                //put the child back in to the option
+                let _ignore=self.right_child.replace(rc);
+                //pos in current is the position of the nth character in the current node
+                match pos_in_child{//+1 because recursive step returned an index while the #of occurences is needed
+                    Some(x) => self.bit_vec.select_1(x+1),
+                    None => None
+                }
+            }
+        }else{None}
     }
 }
 
@@ -269,14 +267,14 @@ mod tests {
 
         let alphabet = vec!['a', 'b'];
         let rs = RankSelect::new(bits, SUPERBLOCK_SIZE);
-        let wavelet_tree_node = WaveletTreeNode {
+        let wavelet_tree_node = Box::new(WaveletTreeNode {
             bit_vec: rs,
             left_child: None,
             right_child: None,
-        };
+        });
         let wavelet_tree = WaveletTree {
             alphabet: vec!['a', 'b'],
-            root_node: Box::new(wavelet_tree_node),
+            root_node: wavelet_tree_node,
         };
 
         assert_eq!(w_tree, wavelet_tree);
@@ -314,18 +312,26 @@ mod tests {
     #[test]
     fn test_select_basic(){
         let test_string = "cabdacdbabadcab";
-        let w_tree = WaveletTree::new(test_string);
+        let mut w_tree = WaveletTree::new(test_string);
         
-        assert_eq!(w_tree.select('c',2),Some(4));
+        assert_eq!(w_tree.select('c',2),Some(5));
     }
     
     //Test for a character outside the alphabet
     #[test]
     fn test_select_outside_alphabet(){
         let test_string = "cabdacdbabadcab";
-        let w_tree = WaveletTree::new(test_string);
-        
+        let mut w_tree = WaveletTree::new(test_string);
         assert_eq!(w_tree.select('f',2),None);
+    }
+    
+    //Test for index out of bounds
+    #[test]
+    fn test_select_out_of_bounds(){
+        let test_string = "cabdacdbabadcab";
+        let mut w_tree = WaveletTree::new(test_string);
+        
+        assert_eq!(w_tree.select('c',4),None);
     }
 
     #[test]
