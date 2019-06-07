@@ -10,7 +10,7 @@ static SUPERBLOCK_SIZE: usize = 1;
 
 
 pub trait WaveletTree<T> {
-    fn new(vector: Vec<T>) -> Self;
+    fn new(vector: impl Iterator<Item=T>) -> Self;
     fn access(&self, position: u64) -> Option<T>;
     fn select(&mut self, object: T, n: u64) -> Option<u64>;
     fn rank(&self, object: T, n: u32) -> Option<u32>;
@@ -41,7 +41,27 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreePointer<T> {
     /// use fp_wavelet_trees;
     /// let wTree = fp_wavelet_trees::WaveletTree::new("example");
     /// ```
-    fn new(vector: Vec<T>) -> WaveletTreePointer<T> {
+    fn new(iterator: impl Iterator<Item=T>) -> WaveletTreePointer<T>{
+        WaveletTreePointer::from_vec(iterator.collect())
+    }
+
+    fn access(&self, position: u64) -> Option<T> {
+        self.root_node.access(position, &self.alphabet[..])
+    }
+
+    /// Return position of n-th character
+    fn select(&mut self, object: T, n: u64) -> Option<u64> {
+        self.root_node.select(object, n, &self.alphabet[..])
+    }
+
+    fn rank(&self, object: T, n: u32) -> Option<u32> {
+//number of characters until position n
+        None
+    }
+}
+
+impl<T: PartialEq + Copy> WaveletTreePointer<T> {
+fn from_vec(vector: Vec<T>) -> WaveletTreePointer<T> {
         //Get distinct characters from string
         let mut alphabet: Vec<T> = vector.clone();
         alphabet.dedup();
@@ -69,20 +89,6 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreePointer<T> {
             root_node,
             alphabet,
         }
-    }
-
-    fn access(&self, position: u64) -> Option<T> {
-        self.root_node.access(position, &self.alphabet[..])
-    }
-
-    /// Return position of n-th character
-    fn select(&mut self, object: T, n: u64) -> Option<u64> {
-        self.root_node.select(object, n, &self.alphabet[..])
-    }
-
-    fn rank(&self, object: T, n: u32) -> Option<u32> {
-//number of characters until position n
-        None
     }
 }
 
