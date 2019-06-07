@@ -237,7 +237,7 @@ mod tests {
     ///
     #[test]
     fn test_2_letter_tree() {
-        let two_tree: WaveletTree<String> = WaveletTree::new("ab");
+        let two_tree: WaveletTreePointer<char> = WaveletTreePointer::new("ab".chars().collect());
         let alphabet: Vec<char> = "ab".chars().collect();
 
         assert_eq!(two_tree.alphabet, alphabet);
@@ -259,8 +259,8 @@ mod tests {
     #[test]
     fn test_5_letter_tree() {
         let input_string = "abcda";
-        let five_tree: WaveletTree<String> = WaveletTree::new(input_string);
-        let alphabet: Vec<char> = input_string.chars().unique().collect();
+        let five_tree: WaveletTreePointer<char> = WaveletTreePointer::new(input_string.chars().collect());
+        let alphabet: Vec<char> = input_string.chars().collect();
 
         assert_eq!(five_tree.alphabet, alphabet);
 
@@ -286,7 +286,7 @@ mod tests {
     /// Testing tests
     #[test]
     fn test_new() {
-        let test_string = "ab";
+        let test_string = "ab".chars().collect();
         let w_tree = WaveletTreePointer::new(test_string);
 
         let mut bits: BitVec<u8> = BitVec::new_fill(false, 2);
@@ -310,38 +310,38 @@ mod tests {
 
     #[test]
     fn test_access_empty() {
-        let test_string = "";
-        let w_tree = WaveletTree::new(test_string);
+        let test_string:Vec<char> = "".chars().collect();
+        let w_tree = WaveletTreePointer::new(test_string.clone());
 
-        assert_eq!(test_string.chars().nth(0), w_tree.access(0));
+        assert_eq!(test_string[0], w_tree.access(0).unwrap());
     }
 
     /// Test if a one letter tree shows the correct number
     #[test]
     fn test_access_1_letter() {
-        let test_string = "a";
-        let w_tree = WaveletTree::new(test_string);
+        let test_string:Vec<char> = "a".chars().collect();
+        let w_tree = WaveletTreePointer::new(test_string.clone());
 
-        assert_eq!(test_string.chars().nth(0), w_tree.access(0));
-        assert_eq!(test_string.chars().nth(1), w_tree.access(1));
+        assert_eq!(test_string[0], w_tree.access(0).unwrap());
+        assert_eq!(test_string[1], w_tree.access(1).unwrap());
     }
 
     #[test]
     fn test_access_5_letter() {
-        let test_string = "abcde";
-        let w_tree = WaveletTree::new(test_string);
+        let test_string:Vec<char> = "abcde".chars().collect();
+        let w_tree = WaveletTreePointer::new(test_string.clone());
 
-        assert_eq!(test_string.chars().nth(0), w_tree.access(0));
-        assert_eq!(test_string.chars().nth(2), w_tree.access(2));
-        assert_eq!(test_string.chars().nth(4), w_tree.access(4));
-        assert_eq!(test_string.chars().nth(5), w_tree.access(5));
+        assert_eq!(test_string[0], w_tree.access(0).unwrap());
+        assert_eq!(test_string[2], w_tree.access(2).unwrap());
+        assert_eq!(test_string[4], w_tree.access(4).unwrap());
+        assert_eq!(test_string[5], w_tree.access(5).unwrap());
     }
 
     /// Simple Test for select
     #[test]
     fn test_select_basic() {
-        let test_string = "cabdacdbabadcab";
-        let mut w_tree = WaveletTree::new(test_string);
+        let test_string:Vec<char> = "cabdacdbabadcab".chars().collect();
+        let mut w_tree = WaveletTreePointer::new(test_string);
 
         assert_eq!(w_tree.select('c', 2), Some(5));
     }
@@ -349,35 +349,35 @@ mod tests {
     //Test for a character outside the alphabet
     #[test]
     fn test_select_outside_alphabet() {
-        let test_string = "cabdacdbabadcab";
-        let mut w_tree = WaveletTree::new(test_string);
+        let test_string:Vec<char> = "cabdacdbabadcab".chars().collect();
+        let mut w_tree = WaveletTreePointer::new(test_string);
         assert_eq!(w_tree.select('f', 2), None);
     }
 
     //Test for index out of bounds
     #[test]
     fn test_select_out_of_bounds() {
-        let test_string = "cabdacdbabadcab";
-        let mut w_tree = WaveletTree::new(test_string);
+        let test_string:Vec<char> = "cabdacdbabadcab".chars().collect();
+        let mut w_tree = WaveletTreePointer::new(test_string);
 
         assert_eq!(w_tree.select('c', 4), None);
     }
 
     #[test]
     fn test_serialize_deserialize() {
-        let test_string = "cbacbcbcbbcabcabcabcabbca";
-        let w_tree = WaveletTree::new(test_string);
+        let test_string:Vec<char> = "cbacbcbcbbcabcabcabcabbca".chars().collect();
+        let w_tree = WaveletTreePointer::new(test_string);
 
         let serialized = serde_json::to_string(&w_tree).unwrap();
-        let w_tree2: WaveletTree<String> = serde_json::from_str(&serialized).unwrap();
+        let w_tree2: WaveletTreePointer<char> = serde_json::from_str(&serialized).unwrap();
 
         assert_eq!(w_tree, w_tree2)
     }
 
     #[test]
     fn test_select_5_letter() {
-        let test_string = "abcde";
-        let mut w_tree = WaveletTree::new(test_string);
+        let test_string:Vec<char> = "abcde".chars().collect();
+        let mut w_tree = WaveletTreePointer::new(test_string);
 
         assert_eq!(w_tree.select('a', 1), Some(0));
         assert_eq!(w_tree.select('b', 1), Some(1));
@@ -388,8 +388,8 @@ mod tests {
 
     #[test]
     fn test_select_2_letter() {
-        let test_string = "ab";
-        let mut w_tree = WaveletTree::new(test_string);
+        let test_string:Vec<char> = "ab".chars().collect();
+        let mut w_tree = WaveletTreePointer::new(test_string);
 
         assert_eq!(w_tree.select('a', 1), Some(0));
         assert_eq!(w_tree.select('b', 1), Some(1));
