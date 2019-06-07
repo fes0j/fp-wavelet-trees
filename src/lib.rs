@@ -2,15 +2,15 @@ use bio::data_structures::rank_select::RankSelect;
 use bv::BitVec;
 use bv::BitsMut;
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 use std::fmt;
-use serde::{Serialize, Deserialize};
 
 /// RankSelect can use different k for the superblocks
 static SUPERBLOCK_SIZE: usize = 1;
 
 /// WaveletTrees
 pub trait WaveletTree<T> {
-    fn new(vector: impl Iterator<Item=T>) -> Self;
+    fn new(vector: impl Iterator<Item = T>) -> Self;
     fn access(&self, position: u64) -> Option<T>;
     fn select(&mut self, object: T, n: u64) -> Option<u64>;
     fn rank(&self, object: T, n: u32) -> Option<u32>;
@@ -25,7 +25,6 @@ pub struct WaveletTreePointer<T: PartialEq + Copy> {
     alphabet: Vec<T>,
 }
 
-
 impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreePointer<T> {
     /// Returns a WavletTree using pointer
     ///
@@ -36,10 +35,10 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreePointer<T> {
     /// # Example
     ///
     /// ```
-    /// use fp_wavelet_trees;
-    /// let wTree = fp_wavelet_trees::WaveletTree::new("example".chars());
+    /// use fp_wavelet_trees::WaveletTreePointer;
+    /// let wTree:WaveletTreePointer<char> = fp_wavelet_trees::WaveletTree::new("example".chars());
     /// ```
-    fn new(iterator: impl Iterator<Item=T>) -> WaveletTreePointer<T> {
+    fn new(iterator: impl Iterator<Item = T>) -> WaveletTreePointer<T> {
         WaveletTreePointer::from_vec(iterator.collect())
     }
 
@@ -53,7 +52,7 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreePointer<T> {
     }
 
     fn rank(&self, object: T, n: u32) -> Option<u32> {
-//number of characters until position n
+        //number of characters until position n
         None
     }
 }
@@ -67,7 +66,6 @@ impl<T: PartialEq + Copy> WaveletTreePointer<T> {
                 alphabet.push(v);
             }
         }
-
 
         //edge case of an empty or single char string
         if alphabet.len() < 2 {
@@ -105,7 +103,10 @@ struct WaveletTreeNode {
 }
 
 impl WaveletTreeNode {
-    fn new<T: PartialEq + Copy>(input_string: Vec<T>, alphabet: &[T]) -> Option<Box<WaveletTreeNode>> {
+    fn new<T: PartialEq + Copy>(
+        input_string: Vec<T>,
+        alphabet: &[T],
+    ) -> Option<Box<WaveletTreeNode>> {
         // When the alphabet only consists of two symbols, no new child nodes are needed.
         // The resulting data would only consist of zeros
         if 2 <= alphabet.len() {
@@ -191,9 +192,10 @@ impl WaveletTreeNode {
                 //put the child back in to the option
                 let _ignore = self.left_child.replace(lc);
                 //pos in current is the position of the nth character in the current node
-                match pos_in_child {//+1 because recursive step returned an index while the #of occurences is needed
+                match pos_in_child {
+                    //+1 because recursive step returned an index while the #of occurences is needed
                     Some(x) => self.bit_vec.select_0(x + 1),
-                    None => None
+                    None => None,
                 }
             }
         } else if right_alphabet.contains(&character) {
@@ -208,12 +210,15 @@ impl WaveletTreeNode {
                 //put the child back in to the option
                 let _ignore = self.right_child.replace(rc);
                 //pos in current is the position of the nth character in the current node
-                match pos_in_child {//+1 because recursive step returned an index while the #of occurences is needed
+                match pos_in_child {
+                    //+1 because recursive step returned an index while the #of occurences is needed
                     Some(x) => self.bit_vec.select_1(x + 1),
-                    None => None
+                    None => None,
                 }
             }
-        } else { None }
+        } else {
+            None
+        }
     }
 }
 
@@ -323,7 +328,7 @@ mod tests {
         let test_string: Vec<char> = "".chars().collect();
         let w_tree = WaveletTreePointer::new("".chars());
 
-        assert_eq!(test_string[0], w_tree.access(0).unwrap());
+        assert_eq!(None, w_tree.access(0));
     }
 
     /// Test if a one letter tree shows the correct number
@@ -333,7 +338,7 @@ mod tests {
         let w_tree = WaveletTreePointer::new("a".chars());
 
         assert_eq!(test_string[0], w_tree.access(0).unwrap());
-       // assert_eq!(test_string[1], w_tree.access(1).unwrap());
+        assert_eq!(None, w_tree.access(1));
     }
 
     #[test]
@@ -344,7 +349,7 @@ mod tests {
         assert_eq!(test_string[0], w_tree.access(0).unwrap());
         assert_eq!(test_string[2], w_tree.access(2).unwrap());
         assert_eq!(test_string[4], w_tree.access(4).unwrap());
-        assert_eq!(test_string[5], w_tree.access(5).unwrap());
+        assert_eq!(None, w_tree.access(5));
     }
 
     /// Simple Test for select
