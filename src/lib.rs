@@ -8,13 +8,30 @@ use serde::{Serialize, Deserialize};
 ///RankSelect can use different k for the superblocks
 static SUPERBLOCK_SIZE: usize = 1;
 
+
+/// A WaveletTree with Pointers is represented here
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct WaveletTree {
+    /// The WaveletTree uses a secondary struct which is recursive
     root_node: Box<WaveletTreeNode>,
+    /// Only on this top level the alphabet will be saved
     alphabet: Vec<char>,
 }
 
+
 impl WaveletTree {
+    /// Returns a WavletTree using pointer
+    ///
+    /// # Arguments
+    ///
+    /// * `string` abitrary text
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use fp_wavelet_trees;
+    /// let wTree = fp_wavelet_trees::WaveletTree::new("example");
+    /// ```
     pub fn new(string: &str) -> WaveletTree {
         //Get distinct characters from string
         let alphabet: Vec<char> = string.chars().unique().collect();
@@ -48,8 +65,9 @@ impl WaveletTree {
         self.root_node.access(position, &self.alphabet[..])
     }
 
+    /// Return position of n-th character
     pub fn select(&mut self, character: char, n: u64) -> Option<u64> {
-        self.root_node.select(character,n,&self.alphabet[..])
+        self.root_node.select(character, n, &self.alphabet[..])
     }
 
     pub fn rank(&self, character: char, n: u32) -> Option<u32> {
@@ -102,7 +120,7 @@ impl WaveletTreeNode {
                 right_child: WaveletTreeNode::new(right_string, &right_alphabet),
             }))
         } else {
-            //edge case of an empty or single char string is handleled in WaveletTree::new
+            //edge case of an empty or single char string is handled in WaveletTree::new
             None
         }
     }
@@ -136,46 +154,46 @@ impl WaveletTreeNode {
         }
     }
 
-    fn select(&mut self, character: char ,n: u64, alphabet: &[char]) -> Option<u64> {
+    fn select(&mut self, character: char, n: u64, alphabet: &[char]) -> Option<u64> {
         //output: position of nth character
         //split alphabet
         let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
         //if left alphabet contains character
         if left_alphabet.contains(&character) {
-            if left_alphabet.len()==1 {
+            if left_alphabet.len() == 1 {
                 self.bit_vec.select_0(n)
-            }else{
+            } else {
                 //take the child out of the option
                 let lc = self.left_child.take();
-                let mut lc =lc.unwrap();
+                let mut lc = lc.unwrap();
                 //posinchild is the position of the nth character in the left child
-                let pos_in_child = lc.select(character,n,left_alphabet);
+                let pos_in_child = lc.select(character, n, left_alphabet);
                 //put the child back in to the option
-                let _ignore=self.left_child.replace(lc);
+                let _ignore = self.left_child.replace(lc);
                 //pos in current is the position of the nth character in the current node
-                match pos_in_child{//+1 because recursive step returned an index while the #of occurences is needed
-                    Some(x) => self.bit_vec.select_0(x+1),
+                match pos_in_child {//+1 because recursive step returned an index while the #of occurences is needed
+                    Some(x) => self.bit_vec.select_0(x + 1),
                     None => None
                 }
             }
-        }else if right_alphabet.contains(&character){
-            if right_alphabet.len()==1 {
+        } else if right_alphabet.contains(&character) {
+            if right_alphabet.len() == 1 {
                 self.bit_vec.select_1(n)
-            }else{
+            } else {
                 //take the child out of the option
                 let rc = self.right_child.take();
                 let mut rc = rc.unwrap();
                 //posinchild is the position of the nth character in the left child
-                let pos_in_child = rc.select(character,n,right_alphabet);
+                let pos_in_child = rc.select(character, n, right_alphabet);
                 //put the child back in to the option
-                let _ignore=self.right_child.replace(rc);
+                let _ignore = self.right_child.replace(rc);
                 //pos in current is the position of the nth character in the current node
-                match pos_in_child{//+1 because recursive step returned an index while the #of occurences is needed
-                    Some(x) => self.bit_vec.select_1(x+1),
+                match pos_in_child {//+1 because recursive step returned an index while the #of occurences is needed
+                    Some(x) => self.bit_vec.select_1(x + 1),
                     None => None
                 }
             }
-        }else{None}
+        } else { None }
     }
 }
 
@@ -288,6 +306,7 @@ mod tests {
         assert_eq!(test_string.chars().nth(0), w_tree.access(0));
     }
 
+    /// Test if a one letter tree shows the correct number
     #[test]
     fn test_access_1_letter() {
         let test_string = "a";
@@ -308,30 +327,30 @@ mod tests {
         assert_eq!(test_string.chars().nth(5), w_tree.access(5));
     }
 
-    //Simple Test for select
+    /// Simple Test for select
     #[test]
-    fn test_select_basic(){
+    fn test_select_basic() {
         let test_string = "cabdacdbabadcab";
         let mut w_tree = WaveletTree::new(test_string);
 
-        assert_eq!(w_tree.select('c',2),Some(5));
+        assert_eq!(w_tree.select('c', 2), Some(5));
     }
 
     //Test for a character outside the alphabet
     #[test]
-    fn test_select_outside_alphabet(){
+    fn test_select_outside_alphabet() {
         let test_string = "cabdacdbabadcab";
         let mut w_tree = WaveletTree::new(test_string);
-        assert_eq!(w_tree.select('f',2),None);
+        assert_eq!(w_tree.select('f', 2), None);
     }
 
     //Test for index out of bounds
     #[test]
-    fn test_select_out_of_bounds(){
+    fn test_select_out_of_bounds() {
         let test_string = "cabdacdbabadcab";
         let mut w_tree = WaveletTree::new(test_string);
 
-        assert_eq!(w_tree.select('c',4),None);
+        assert_eq!(w_tree.select('c', 4), None);
     }
 
     #[test]
