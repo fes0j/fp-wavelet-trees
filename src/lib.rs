@@ -9,9 +9,15 @@ use serde::{Serialize, Deserialize};
 static SUPERBLOCK_SIZE: usize = 1;
 
 
+pub trait WaveletTree<T> {
+    fn access(&self, position: u64) -> Option<T>;
+    fn select(&mut self, object: T, n: u64) -> Option<u64>;
+    fn rank(&self, object: T, n: u32) -> Option<u32>;
+}
+
 /// A WaveletTree with Pointers is represented here
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub struct WaveletTree<T: PartialEq + Copy> {
+pub struct WaveletTreePointer<T: PartialEq + Copy> {
     /// The WaveletTree uses a secondary struct which is recursive
     root_node: Box<WaveletTreeNode>,
     /// Only on this top level the alphabet will be saved
@@ -19,7 +25,7 @@ pub struct WaveletTree<T: PartialEq + Copy> {
 }
 
 
-impl <T: PartialEq + Copy> WaveletTree<T>{
+impl<T: PartialEq + Copy> WaveletTreePointer<T> {
     /// Returns a WavletTree using pointer
     ///
     /// # Arguments
@@ -32,13 +38,13 @@ impl <T: PartialEq + Copy> WaveletTree<T>{
     /// use fp_wavelet_trees;
     /// let wTree = fp_wavelet_trees::WaveletTree::new("example");
     /// ```
-    pub fn new(vector : Vec<T>) -> WaveletTree<T> {
+    pub fn new(vector: Vec<T>) -> WaveletTreePointer<T> {
         //Get distinct characters from string
         let mut alphabet: Vec<T> = vector.clone();
         alphabet.dedup();
         //edge case of an empty or single char string
         if alphabet.len() < 2 {
-            return WaveletTree {
+            return WaveletTreePointer {
                 root_node: {
                     let mut bitvector = BitVec::new();
                     bitvector.resize(vector.len() as u64, true);
@@ -56,23 +62,25 @@ impl <T: PartialEq + Copy> WaveletTree<T>{
             WaveletTreeNode::new(vector, &alphabet) /* even with an empty string, there should be a node */
                 .expect("Without a tree node the WaveletTree will be useless ");
 
-        WaveletTree {
+        WaveletTreePointer {
             root_node,
             alphabet,
         }
     }
+}
 
-    pub fn access(&self, position: u64) -> Option<T> {
+impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreePointer<T> {
+    fn access(&self, position: u64) -> Option<T> {
         self.root_node.access(position, &self.alphabet[..])
     }
 
     /// Return position of n-th character
-    pub fn select(&mut self, object: T, n: u64) -> Option<u64> {
+    fn select(&mut self, object: T, n: u64) -> Option<u64> {
         self.root_node.select(object, n, &self.alphabet[..])
     }
 
-    pub fn rank(&self, object: T, n: u32) -> Option<u32> {
-        //number of characters until position n
+    fn rank(&self, object: T, n: u32) -> Option<u32> {
+//number of characters until position n
         None
     }
 }
@@ -228,7 +236,7 @@ mod tests {
     ///
     #[test]
     fn test_2_letter_tree() {
-        let two_tree: WaveletTree = WaveletTree::new("ab");
+        let two_tree: WaveletTree<String> = WaveletTree::new("ab");
         let alphabet: Vec<char> = "ab".chars().collect();
 
         assert_eq!(two_tree.alphabet, alphabet);
@@ -250,7 +258,7 @@ mod tests {
     #[test]
     fn test_5_letter_tree() {
         let input_string = "abcda";
-        let five_tree: WaveletTree = WaveletTree::new(input_string);
+        let five_tree: WaveletTree<String> = WaveletTree::new(input_string);
         let alphabet: Vec<char> = input_string.chars().unique().collect();
 
         assert_eq!(five_tree.alphabet, alphabet);
@@ -278,7 +286,7 @@ mod tests {
     #[test]
     fn test_new() {
         let test_string = "ab";
-        let w_tree = WaveletTree::new(test_string);
+        let w_tree = WaveletTreePointer::new(test_string);
 
         let mut bits: BitVec<u8> = BitVec::new_fill(false, 2);
         bits.set_bit(0, false);
@@ -291,7 +299,7 @@ mod tests {
             left_child: None,
             right_child: None,
         });
-        let wavelet_tree = WaveletTree {
+        let wavelet_tree = WaveletTreePointer {
             alphabet: vec!['a', 'b'],
             root_node: wavelet_tree_node,
         };
@@ -360,31 +368,32 @@ mod tests {
         let w_tree = WaveletTree::new(test_string);
 
         let serialized = serde_json::to_string(&w_tree).unwrap();
-        let w_tree2: WaveletTree = serde_json::from_str(&serialized).unwrap();
+        let w_tree2: WaveletTree<String> = serde_json::from_str(&serialized).unwrap();
 
         assert_eq!(w_tree, w_tree2)
     }
+
     #[test]
     fn test_select_5_letter() {
         let test_string = "abcde";
         let mut w_tree = WaveletTree::new(test_string);
 
-        assert_eq!(w_tree.select('a', 1),Some(0));
-        assert_eq!(w_tree.select('b', 1),Some(1));
-        assert_eq!(w_tree.select('c', 1),Some(2));
-        assert_eq!(w_tree.select('d', 1),Some(3));
-        assert_eq!(w_tree.select('e', 1),Some(4));
+        assert_eq!(w_tree.select('a', 1), Some(0));
+        assert_eq!(w_tree.select('b', 1), Some(1));
+        assert_eq!(w_tree.select('c', 1), Some(2));
+        assert_eq!(w_tree.select('d', 1), Some(3));
+        assert_eq!(w_tree.select('e', 1), Some(4));
     }
 
-     #[test]
+    #[test]
     fn test_select_2_letter() {
         let test_string = "ab";
         let mut w_tree = WaveletTree::new(test_string);
 
-        assert_eq!(w_tree.select('a', 1),Some(0));
-        assert_eq!(w_tree.select('b', 1),Some(1));
-        assert_eq!(w_tree.select('c', 1),None);
-        assert_eq!(w_tree.select('a', 2),None);
-        assert_eq!(w_tree.select('b', 3),None);
+        assert_eq!(w_tree.select('a', 1), Some(0));
+        assert_eq!(w_tree.select('b', 1), Some(1));
+        assert_eq!(w_tree.select('c', 1), None);
+        assert_eq!(w_tree.select('a', 2), None);
+        assert_eq!(w_tree.select('b', 3), None);
     }
 }
