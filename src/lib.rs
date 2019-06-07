@@ -13,7 +13,7 @@ pub trait WaveletTree<T> {
     fn new(vector: impl Iterator<Item = T>) -> Self;
     fn access(&self, position: u64) -> Option<T>;
     fn select(&mut self, object: T, n: u64) -> Option<u64>;
-    fn rank(&self, object: T, n: u32) -> Option<u32>;
+    fn rank(&self, object: T, n: u64) -> Option<u64>;
 }
 
 /// A WaveletTree with Pointers is represented here
@@ -51,9 +51,8 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreePointer<T> {
         self.root_node.select(object, n, &self.alphabet[..])
     }
 
-    fn rank(&self, object: T, n: u32) -> Option<u32> {
-        //number of characters until position n
-        None
+    fn rank(&self, object: T, n: u64) -> Option<u64> {
+        self.root_node.rank(&self.alphabet[..], object, n)
     }
 }
 
@@ -217,6 +216,32 @@ impl WaveletTreeNode {
                 }
             }
         } else {
+            None
+        }
+    }
+
+    /// Returns the number of occurences of a character in the sequence until position n
+    pub fn rank<T: PartialEq + Copy>(&self, alphabet: &[T], object: T, n: u64) -> Option<u64> {
+        //Determine in which half of the alphabet the character is
+        let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
+        if left_alphabet.contains(&object) {
+            //Character is in left subtree
+            let i = self.bit_vec.rank_0(n).unwrap();
+            if let Some(ref left_child) = self.left_child {
+                left_child.rank(left_alphabet, object, i)
+            } else {
+                Some(i)
+            }
+        } else if right_alphabet.contains(&object) {
+            //Character is in right subtree
+            let i = self.bit_vec.rank_1(n).unwrap();
+            if let Some(ref right_child) = self.right_child {
+                right_child.rank(right_alphabet, object, i)
+            } else {
+                Some(i)
+            }
+        } else {
+            //Character is not in alphabet
             None
         }
     }
@@ -412,4 +437,23 @@ mod tests {
         assert_eq!(w_tree.select('a', 2), None);
         assert_eq!(w_tree.select('b', 3), None);
     }
+    
+    #[test]
+    fn test_rank_2_letters() {
+        //let test_string = "aaaaaaaaaabsbsbdsbdsabb";
+        let test_string = "ababababababab";
+        let w_tree = WaveletTreePointer::new(test_string.clone().chars());
+
+        assert_eq!(w_tree.rank('a', 0), Some(1));
+        assert_eq!(w_tree.rank('b', 0), Some(0));
+
+        assert_eq!(w_tree.rank('a', 6), Some(4));
+        assert_eq!(w_tree.rank('b', 6), Some(3));
+
+        assert_eq!(w_tree.rank('a', 13), Some(7));
+        assert_eq!(w_tree.rank('b', 13), Some(7));
+
+        assert_eq!(w_tree.rank('c', 5), None);
+    }
+
 }
