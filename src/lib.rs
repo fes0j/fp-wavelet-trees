@@ -38,7 +38,7 @@ impl<T: PartialEq + Copy> WaveletTreePointer<T> {
     /// use fp_wavelet_trees;
     /// let wTree = fp_wavelet_trees::WaveletTree::new("example");
     /// ```
-    pub fn new(vector: Vec<T>) -> WaveletTreePointer<T> {
+    pub fn from_vec(vector: Vec<T>) -> WaveletTreePointer<T> {
         //Get distinct characters from string
         let mut alphabet: Vec<T> = vector.clone();
         alphabet.dedup();
@@ -66,6 +66,10 @@ impl<T: PartialEq + Copy> WaveletTreePointer<T> {
             root_node,
             alphabet,
         }
+    }
+    
+    pub fn new(iterator: impl Iterator<Item=T>) -> WaveletTreePointer<T>{
+        WaveletTreePointer::from_vec(iterator.collect())
     }
 }
 
