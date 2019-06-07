@@ -11,11 +11,11 @@ static SUPERBLOCK_SIZE: usize = 1;
 
 /// A WaveletTree with Pointers is represented here
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub struct WaveletTree {
+pub struct WaveletTree<T: PartialEq + Clone> {
     /// The WaveletTree uses a secondary struct which is recursive
-    root_node: Box<WaveletTreeNode>,
+    root_node: Box<WaveletTreeNode<T>>,
     /// Only on this top level the alphabet will be saved
-    alphabet: Vec<char>,
+    alphabet: Vec<T>,
 }
 
 
@@ -32,9 +32,9 @@ impl WaveletTree {
     /// use fp_wavelet_trees;
     /// let wTree = fp_wavelet_trees::WaveletTree::new("example");
     /// ```
-    pub fn new(string: &str) -> WaveletTree {
+    pub fn new<T: PartialEq + Clone>(vector : T) -> WaveletTree<T> {
         //Get distinct characters from string
-        let alphabet: Vec<char> = string.chars().unique().collect();
+        let alphabet: Vec<T> = string.chars().unique().collect();
         //edge case of an empty or single char string
         if alphabet.len() < 2 {
             return WaveletTree {
@@ -61,16 +61,16 @@ impl WaveletTree {
         }
     }
 
-    pub fn access(&self, position: u64) -> Option<char> {
+    pub fn access(&self, position: u64) -> Option<T> {
         self.root_node.access(position, &self.alphabet[..])
     }
 
     /// Return position of n-th character
-    pub fn select(&mut self, character: char, n: u64) -> Option<u64> {
-        self.root_node.select(character, n, &self.alphabet[..])
+    pub fn select(&mut self, object: T, n: u64) -> Option<u64> {
+        self.root_node.select(object, n, &self.alphabet[..])
     }
 
-    pub fn rank(&self, character: char, n: u32) -> Option<u32> {
+    pub fn rank(&self, object: T, n: u32) -> Option<u32> {
         //number of characters until position n
         None
     }
