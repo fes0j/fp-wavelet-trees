@@ -344,4 +344,27 @@ mod tests {
 
         assert_eq!(w_tree, w_tree2)
     }
+    #[test]
+    fn test_select_5_letter() {
+        let test_string = "abcde";
+        let mut w_tree = WaveletTree::new(test_string);
+
+        assert_eq!(w_tree.select('a', 1),Some(0));
+        assert_eq!(w_tree.select('b', 1),Some(1));
+        assert_eq!(w_tree.select('c', 1),Some(2));
+        assert_eq!(w_tree.select('d', 1),Some(3));
+        assert_eq!(w_tree.select('e', 1),Some(4));
+    }
+
+     #[test]
+    fn test_select_2_letter() {
+        let test_string = "ab";
+        let mut w_tree = WaveletTree::new(test_string);
+
+        assert_eq!(w_tree.select('a', 1),Some(0));
+        assert_eq!(w_tree.select('b', 1),Some(1));
+        assert_eq!(w_tree.select('c', 1),None);
+        assert_eq!(w_tree.select('a', 2),None);
+        assert_eq!(w_tree.select('b', 3),None);
+    }
 }
