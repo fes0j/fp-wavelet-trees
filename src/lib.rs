@@ -3,11 +3,12 @@ use bv::BitVec;
 use bv::BitsMut;
 use itertools::Itertools;
 use std::fmt;
+use serde::{Serialize, Deserialize};
 
 ///RankSelect can use different k for the superblocks
 static SUPERBLOCK_SIZE: usize = 1;
 
-#[derive(PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct WaveletTree {
     root_node: Box<WaveletTreeNode>,
     alphabet: Vec<char>,
@@ -43,14 +44,6 @@ impl WaveletTree {
         }
     }
 
-    pub fn deserialize(placeholder: &str) {
-        //deserialize
-    }
-
-    pub fn serialize(&self) {
-        //serialize
-    }
-
     pub fn access(&self, position: u64) -> Option<char> {
         self.root_node.access(position, &self.alphabet[..])
     }
@@ -66,6 +59,7 @@ impl WaveletTree {
 }
 
 //This will be the tree structure itself, with the bit vector as data
+#[derive(Serialize, Deserialize)]
 struct WaveletTreeNode {
     bit_vec: RankSelect,
     left_child: Option<Box<WaveletTreeNode>>,
@@ -333,13 +327,15 @@ mod tests {
         
         assert_eq!(w_tree.select('f',2),None);
     }
-    
-    //Test for a character out of bounds
+
     #[test]
-    fn test_select_out_of_bounds(){
-        let test_string = "cabdacdbabadcab";
+    fn test_serialize_deserialize() {
+        let test_string = "cbacbcbcbbcabcabcabcabbca";
         let w_tree = WaveletTree::new(test_string);
-        
-        assert_eq!(w_tree.select('a',6),None);
+
+        let serialized = serde_json::to_string(&w_tree).unwrap();
+        let w_tree2: WaveletTree = serde_json::from_str(&serialized).unwrap();
+
+        assert_eq!(w_tree, w_tree2)
     }
 }
