@@ -31,13 +31,13 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreePointer<T> {
     ///
     /// # Arguments
     ///
-    /// * `string` abitrary text
+    /// * `iterator` Iterator over any objects implementing PartialEq and Copy traits
     ///
     /// # Example
     ///
     /// ```
     /// use fp_wavelet_trees;
-    /// let wTree = fp_wavelet_trees::WaveletTree::new("example");
+    /// let wTree = fp_wavelet_trees::WaveletTree::new("example".chars());
     /// ```
     fn new(iterator: impl Iterator<Item=T>) -> WaveletTreePointer<T> {
         WaveletTreePointer::from_vec(iterator.collect())
@@ -333,7 +333,7 @@ mod tests {
         let w_tree = WaveletTreePointer::new("a".chars());
 
         assert_eq!(test_string[0], w_tree.access(0).unwrap());
-        assert_eq!(test_string[1], w_tree.access(1).unwrap());
+       // assert_eq!(test_string[1], w_tree.access(1).unwrap());
     }
 
     #[test]
