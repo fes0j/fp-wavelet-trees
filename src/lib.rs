@@ -191,7 +191,7 @@ impl fmt::Debug for WaveletTreeNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "WaveletTreeNode {{ {:?}, r:{:?} l:{:?} }}",
+            "WaveletTreeNode {{ {:?}, l:{:?} r:{:?} }}",
             self.bit_vec.bits(),
             self.left_child,
             self.right_child
@@ -307,16 +307,16 @@ mod tests {
         assert_eq!(test_string.chars().nth(4), w_tree.access(4));
         assert_eq!(test_string.chars().nth(5), w_tree.access(5));
     }
-    
+
     //Simple Test for select
     #[test]
     fn test_select_basic(){
         let test_string = "cabdacdbabadcab";
         let mut w_tree = WaveletTree::new(test_string);
-        
+
         assert_eq!(w_tree.select('c',2),Some(5));
     }
-    
+
     //Test for a character outside the alphabet
     #[test]
     fn test_select_outside_alphabet(){
@@ -324,13 +324,13 @@ mod tests {
         let mut w_tree = WaveletTree::new(test_string);
         assert_eq!(w_tree.select('f',2),None);
     }
-    
+
     //Test for index out of bounds
     #[test]
     fn test_select_out_of_bounds(){
         let test_string = "cabdacdbabadcab";
         let mut w_tree = WaveletTree::new(test_string);
-        
+
         assert_eq!(w_tree.select('c',4),None);
     }
 
