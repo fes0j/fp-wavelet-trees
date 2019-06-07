@@ -3,6 +3,7 @@ use bv::BitVec;
 use bv::BitsMut;
 use itertools::Itertools;
 use std::fmt;
+use std::time::{Duration, Instant};
 
 ///RankSelect can use different k for the superblocks
 static SUPERBLOCK_SIZE: usize = 1;
@@ -58,7 +59,7 @@ impl WaveletTree {
 
     pub fn select(&self, character: char, n: u64) -> Option<u64> {
         // check if the character is valid
-        if self.alphabet.clone().into_iter().filter(|c| *c == character).count() == 0 {
+        if !self.alphabet.contains(&character) {
             return None;
         }
 
@@ -370,12 +371,15 @@ mod tests {
     //Test for select if it goes out of bounds or mishandels missing chars
     #[test]
     fn test_select(){
+        let start = Instant::now();
         let test_string = "cabdacdbabadcab";
         let w_tree = WaveletTree::new(test_string);
 
         assert_eq!(w_tree.select('a',2),Some(4));
         assert_eq!(w_tree.select('a',6),None);
         assert_eq!(w_tree.select('f',2),None);
+        let duration = start.elapsed();
+        println!("Time elapsed in test_select() is: {:?}", duration);
     }
 
     #[test]
