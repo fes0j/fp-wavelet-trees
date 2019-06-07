@@ -285,4 +285,15 @@ mod tests {
         assert_eq!(w_tree.select('a',6),None);
         assert_eq!(w_tree.select('f',2),None);
     }
+
+    #[test]
+    fn test_serialize_deserialize() {
+        let test_string = "cbacbcbcbbcabcabcabcabbca";
+        let w_tree = WaveletTree::new(test_string);
+
+        let serialized = serde_json::to_string(&w_tree).unwrap();
+        let w_tree2: WaveletTree = serde_json::from_str(&serialized).unwrap();
+
+        assert_eq!(w_tree, w_tree2)
+    }
 }

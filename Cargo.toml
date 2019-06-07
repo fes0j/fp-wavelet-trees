@@ -9,3 +9,6 @@ bio = "*"
 bv = { version = "0.10", features = ["serde"] }
 serde = "1.0.91"
 itertools = "*"
+
+[dev-dependencies]
+serde_json = "1.0.39"
