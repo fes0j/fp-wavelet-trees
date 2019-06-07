@@ -63,21 +63,21 @@ impl WaveletTree {
         }
 
         // contains the path nodes from the root to the leaf with the char 'character'
-        let mut path_nodes:Vec<WaveletTreeNode> = vec![self.root_node.clone()];
+        let mut path_nodes:Vec<WaveletTreeNode> = vec![*self.root_node.clone()];
         // contains the path from the root to the leaf with the char 'character' (either 'l' or 'r')
         let mut path:Vec<char> = vec![];
 
         let (left_alphabet, right_alphabet) = self.alphabet.split_at(self.alphabet.len() / 2);
         let mut alphabet = if left_alphabet.contains(&character) {
             if left_alphabet.len() >= 2 {
-                path_nodes.push(path_nodes.last().unwrap().left_child.clone().unwrap());
+                path_nodes.push(*path_nodes.last().unwrap().left_child.clone().unwrap());
                 path.push('l');
             }
             left_alphabet
         }
         else {
             if right_alphabet.len() >= 2 {
-                path_nodes.push(path_nodes.last().unwrap().right_child.clone().unwrap());
+                path_nodes.push(*path_nodes.last().unwrap().right_child.clone().unwrap());
                 path.push('r');
             }
             right_alphabet
@@ -86,14 +86,14 @@ impl WaveletTree {
             let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
             alphabet = if left_alphabet.contains(&character) {
                 if left_alphabet.len() >= 2 {
-                    path_nodes.push(path_nodes.last().unwrap().left_child.clone().unwrap());
+                    path_nodes.push(*path_nodes.last().unwrap().left_child.clone().unwrap());
                     path.push('l');
                 }
                 left_alphabet
             }
             else {
                 if right_alphabet.len() >= 2 {
-                    path_nodes.push(path_nodes.last().unwrap().right_child.clone().unwrap());
+                    path_nodes.push(*path_nodes.last().unwrap().right_child.clone().unwrap());
                     path.push('r');
                 }
                 right_alphabet
