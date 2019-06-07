@@ -152,12 +152,12 @@ impl WaveletTreeNode {
                 self.bit_vec.select_0(n)
             }else{
                 //take the child out of the option
-                let mut lc = self.left_child.take();
+                let lc = self.left_child.take();
                 let mut lc =lc.unwrap();
                 //posinchild is the position of the nth character in the left child
                 let pos_in_child = lc.select(character,n,left_alphabet);
                 //put the child back in to the option
-                let ignore=self.left_child.replace(lc);
+                let _ignore=self.left_child.replace(lc);
                 //pos in current is the position of the nth character in the current node
                 match pos_in_child{//+1 because recursive step returned an index while the #of occurences is needed
                     Some(x) => self.bit_vec.select_0(x+1),
@@ -169,12 +169,12 @@ impl WaveletTreeNode {
                 self.bit_vec.select_1(n)
             }else{
                 //take the child out of the option
-                let mut rc = self.right_child.take();
+                let rc = self.right_child.take();
                 let mut rc = rc.unwrap();
                 //posinchild is the position of the nth character in the left child
                 let pos_in_child = rc.select(character,n,right_alphabet);
                 //put the child back in to the option
-                let ignore=self.right_child.replace(rc);
+                let _ignore=self.right_child.replace(rc);
                 //pos in current is the position of the nth character in the current node
                 match pos_in_child{//+1 because recursive step returned an index while the #of occurences is needed
                     Some(x) => self.bit_vec.select_1(x+1),
@@ -182,11 +182,6 @@ impl WaveletTreeNode {
                 }
             }
         }else{None}
-    }
-    
-    //helper to split the node up
-    fn split_up(self) -> (RankSelect,Option<Box<WaveletTreeNode>>,Option<Box<WaveletTreeNode>>){
-        (self.bit_vec,self.right_child,self.left_child)
     }
 }
 
@@ -326,7 +321,7 @@ mod tests {
         let mut w_tree = WaveletTree::new(test_string);
         
         assert_eq!(w_tree.select('b',2),Some(3));
-        assert_eq!(w_tree.select('a',6),None);
+        assert_eq!(w_tree.select('a',2),None);
         assert_eq!(w_tree.select('f',2),None);
     }
 }
