@@ -11,15 +11,15 @@ static SUPERBLOCK_SIZE: usize = 1;
 
 /// A WaveletTree with Pointers is represented here
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub struct WaveletTree<T: PartialEq + Clone> {
+pub struct WaveletTree<T: PartialEq + Copy> {
     /// The WaveletTree uses a secondary struct which is recursive
-    root_node: Box<WaveletTreeNode<T>>,
+    root_node: Box<WaveletTreeNode>,
     /// Only on this top level the alphabet will be saved
     alphabet: Vec<T>,
 }
 
 
-impl <T: PartialEq + Clone> WaveletTree<T>{
+impl <T: PartialEq + Copy> WaveletTree<T>{
     /// Returns a WavletTree using pointer
     ///
     /// # Arguments
@@ -79,14 +79,14 @@ impl <T: PartialEq + Clone> WaveletTree<T>{
 
 //This will be the tree structure itself, with the bit vector as data
 #[derive(Serialize, Deserialize)]
-struct WaveletTreeNode<T> {
+struct WaveletTreeNode {
     bit_vec: RankSelect,
-    left_child: Option<Box<WaveletTreeNode<T>>>,
-    right_child: Option<Box<WaveletTreeNode<T>>>,
+    left_child: Option<Box<WaveletTreeNode>>,
+    right_child: Option<Box<WaveletTreeNode>>,
 }
 
-impl <T: PartialEq + Clone> WaveletTreeNode<T> {
-    fn new(input_string: Vec<T>, alphabet: &[T]) -> Option<Box<WaveletTreeNode<T>>> {
+impl WaveletTreeNode {
+    fn new<T: PartialEq + Copy>(input_string: Vec<T>, alphabet: &[T]) -> Option<Box<WaveletTreeNode>> {
         // When the alphabet only consists of two symbols, no new child nodes are needed.
         // The resulting data would only consist of zeros
         if 2 <= alphabet.len() {
@@ -126,7 +126,7 @@ impl <T: PartialEq + Clone> WaveletTreeNode<T> {
         }
     }
 
-    fn access(&self, position: u64, alphabet: &[char]) -> Option<char> {
+    fn access<T: PartialEq + Copy>(&self, position: u64, alphabet: &[T]) -> Option<T> {
         //check if position is valid
         if self.bit_vec.bits().len() <= position {
             return None;
@@ -155,7 +155,7 @@ impl <T: PartialEq + Clone> WaveletTreeNode<T> {
         }
     }
 
-    fn select(&mut self, character: T, n: u64, alphabet: &[T]) -> Option<u64> {
+    fn select<T: PartialEq + Copy>(&mut self, character: T, n: u64, alphabet: &[T]) -> Option<u64> {
         //output: position of nth character
         //split alphabet
         let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
@@ -198,15 +198,15 @@ impl <T: PartialEq + Clone> WaveletTreeNode<T> {
     }
 }
 
-impl <T: PartialEq + Clone> PartialEq for WaveletTreeNode<T> {
-    fn eq(&self, other: &WaveletTreeNode<T>) -> bool {
+impl PartialEq for WaveletTreeNode {
+    fn eq(&self, other: &WaveletTreeNode) -> bool {
         self.bit_vec.bits() == other.bit_vec.bits()
             && self.left_child == other.left_child
             && self.right_child == other.right_child
     }
 }
 
-impl <T: PartialEq + Clone> fmt::Debug for WaveletTreeNode<T> {
+impl fmt::Debug for WaveletTreeNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
