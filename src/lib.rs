@@ -19,7 +19,7 @@ pub struct WaveletTree<T: PartialEq + Clone> {
 }
 
 
-impl WaveletTree {
+impl <T: PartialEq + Clone> WaveletTree<T>{
     /// Returns a WavletTree using pointer
     ///
     /// # Arguments
@@ -32,15 +32,16 @@ impl WaveletTree {
     /// use fp_wavelet_trees;
     /// let wTree = fp_wavelet_trees::WaveletTree::new("example");
     /// ```
-    pub fn new<T: PartialEq + Clone>(vector : T) -> WaveletTree<T> {
+    pub fn new(vector : Vec<T>) -> WaveletTree<T> {
         //Get distinct characters from string
-        let alphabet: Vec<T> = string.chars().unique().collect();
+        let mut alphabet: Vec<T> = vector.clone();
+        alphabet.dedup();
         //edge case of an empty or single char string
         if alphabet.len() < 2 {
             return WaveletTree {
                 root_node: {
                     let mut bitvector = BitVec::new();
-                    bitvector.resize(string.len() as u64, true);
+                    bitvector.resize(vector.len() as u64, true);
                     Box::new(WaveletTreeNode {
                         bit_vec: RankSelect::new(bitvector, SUPERBLOCK_SIZE),
                         left_child: None,
@@ -52,7 +53,7 @@ impl WaveletTree {
         }
         //Create tree
         let root_node =
-            WaveletTreeNode::new(string.chars().collect(), &alphabet) /* even with an empty string, there should be a node */
+            WaveletTreeNode::new(vector, &alphabet) /* even with an empty string, there should be a node */
                 .expect("Without a tree node the WaveletTree will be useless ");
 
         WaveletTree {
@@ -78,14 +79,14 @@ impl WaveletTree {
 
 //This will be the tree structure itself, with the bit vector as data
 #[derive(Serialize, Deserialize)]
-struct WaveletTreeNode {
+struct WaveletTreeNode<T> {
     bit_vec: RankSelect,
-    left_child: Option<Box<WaveletTreeNode>>,
-    right_child: Option<Box<WaveletTreeNode>>,
+    left_child: Option<Box<WaveletTreeNode<T>>>,
+    right_child: Option<Box<WaveletTreeNode<T>>>,
 }
 
-impl WaveletTreeNode {
-    fn new(input_string: Vec<char>, alphabet: &[char]) -> Option<Box<WaveletTreeNode>> {
+impl <T: PartialEq + Clone> WaveletTreeNode<T> {
+    fn new(input_string: Vec<T>, alphabet: &[T]) -> Option<Box<WaveletTreeNode<T>>> {
         // When the alphabet only consists of two symbols, no new child nodes are needed.
         // The resulting data would only consist of zeros
         if 2 <= alphabet.len() {
@@ -154,7 +155,7 @@ impl WaveletTreeNode {
         }
     }
 
-    fn select(&mut self, character: char, n: u64, alphabet: &[char]) -> Option<u64> {
+    fn select(&mut self, character: T, n: u64, alphabet: &[T]) -> Option<u64> {
         //output: position of nth character
         //split alphabet
         let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
@@ -197,15 +198,15 @@ impl WaveletTreeNode {
     }
 }
 
-impl PartialEq for WaveletTreeNode {
-    fn eq(&self, other: &WaveletTreeNode) -> bool {
+impl <T: PartialEq + Clone> PartialEq for WaveletTreeNode<T> {
+    fn eq(&self, other: &WaveletTreeNode<T>) -> bool {
         self.bit_vec.bits() == other.bit_vec.bits()
             && self.left_child == other.left_child
             && self.right_child == other.right_child
     }
 }
 
-impl fmt::Debug for WaveletTreeNode {
+impl <T: PartialEq + Clone> fmt::Debug for WaveletTreeNode<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
