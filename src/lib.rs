@@ -10,6 +10,7 @@ static SUPERBLOCK_SIZE: usize = 1;
 
 
 pub trait WaveletTree<T> {
+    fn new(vector: Vec<T>) -> Self;
     fn access(&self, position: u64) -> Option<T>;
     fn select(&mut self, object: T, n: u64) -> Option<u64>;
     fn rank(&self, object: T, n: u32) -> Option<u32>;
@@ -25,7 +26,9 @@ pub struct WaveletTreePointer<T: PartialEq + Copy> {
 }
 
 
-impl<T: PartialEq + Copy> WaveletTreePointer<T> {
+
+
+impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreePointer<T> {
     /// Returns a WavletTree using pointer
     ///
     /// # Arguments
@@ -38,7 +41,7 @@ impl<T: PartialEq + Copy> WaveletTreePointer<T> {
     /// use fp_wavelet_trees;
     /// let wTree = fp_wavelet_trees::WaveletTree::new("example");
     /// ```
-    pub fn new(vector: Vec<T>) -> WaveletTreePointer<T> {
+    fn new(vector: Vec<T>) -> WaveletTreePointer<T> {
         //Get distinct characters from string
         let mut alphabet: Vec<T> = vector.clone();
         alphabet.dedup();
@@ -67,9 +70,7 @@ impl<T: PartialEq + Copy> WaveletTreePointer<T> {
             alphabet,
         }
     }
-}
 
-impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreePointer<T> {
     fn access(&self, position: u64) -> Option<T> {
         self.root_node.access(position, &self.alphabet[..])
     }
