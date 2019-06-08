@@ -303,12 +303,14 @@ impl fmt::Debug for WaveletTreeNode {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::ffi::OsString;
+    use unicode_segmentation::UnicodeSegmentation;
 
     /// # Test with two different letters
     /// This will test for alphabet and child nodes.
     /// The RankSelect Vector will also be tested.
     ///
-    #[test]
+    /* #[test]
     fn test_2_letter_tree() {
         let two_tree: WaveletTreePointer<char> = WaveletTreePointer::new("ab".chars());
         let alphabet: Vec<char> = "ab".chars().collect();
@@ -513,16 +515,19 @@ mod tests {
 
         assert_eq!(w_tree.rank('c', 5), None);
     }
-
+ */
     #[test]
     fn test_rank_unicode() {
-        let test_string = "Hello world, こんにちは世界, Привет, мир";
-        let mut w_tree: WaveletTreePointer<char> = WaveletTree::new(test_string.chars());
+        let test_string = "Hellow orld, こんにちは世界, Привет, мир";
+        let test_string = UnicodeSegmentation::graphemes(test_string, true).collect::<Vec<&str>>();
+        assert_eq!(test_string[0],"H");
+        let mut w_tree: WaveletTreePointer<&str> = WaveletTree::new(test_string.into_iter());
 
         //println!("{:#?}", w_tree);
-        assert_eq!(w_tree.rank('o', 32), Some(2));
-        assert_eq!(w_tree.rank('世', 32), Some(1));
-        assert_eq!(w_tree.rank('и', 32), Some(2));
+        let r=w_tree.rank("o", 3);
+        assert_eq!(r, Some(1));
+        assert_eq!(w_tree.rank("世", 32), Some(1));
+        assert_eq!(w_tree.rank("и", 32), Some(2));
 
         /*assert_eq!(w_tree.rank('o', 16), Some(2));
         assert_eq!(w_tree.rank('世', 16), Some(0));
