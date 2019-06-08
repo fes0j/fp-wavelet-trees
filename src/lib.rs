@@ -236,7 +236,7 @@ impl WaveletTreeNode {
     }
 
     /// Returns the number of occurences of a character in the sequence until position n
-    pub fn rank<T: PartialEq + Copy>(&mut self, alphabet: &[T], object: T, n: u64) -> Option<u64> {
+    pub fn rank<T: PartialEq + Copy>(&self, alphabet: &[T], object: T, n: u64) -> Option<u64> {
         //Determine in which half of the alphabet the character is
         let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
         if left_alphabet.contains(&object) {
@@ -244,34 +244,32 @@ impl WaveletTreeNode {
             if left_alphabet.len() == 1 {
                 self.bit_vec.rank_0(n)
             } else {
-                //take the child out of the option
-                let lc = self.left_child.take();
-                let mut lc = lc.unwrap();
-                //recursive rank from the leave
-                let rank_left = match self.bit_vec.rank_0(n){
-                    None => None,
-                    Some(i) => lc.rank(left_alphabet, object, i)
-                };
-                //put the child back in to the option
-                let _ignore = self.left_child.replace(lc);
-                rank_left
+                if let Some(ref lc) = self.left_child{
+                    //recursive rank from the leave
+                    let rank_left = match self.bit_vec.rank_0(n){
+                        None => None,
+                        Some(i) => lc.rank(left_alphabet, object, i)
+                    };
+                    rank_left
+                } else {
+                    panic!("rank: There should be a left child but there isn't!");
+                }
             }
         } else if right_alphabet.contains(&object) {
             //already at leaf level
             if right_alphabet.len() == 1 {
                 self.bit_vec.rank_1(n)
             } else {
-                //take the child out of the option
-                let rc = self.right_child.take();
-                let mut rc = rc.unwrap();
-                //recursive rank from the leave
-                let rank_right = match self.bit_vec.rank_0(n){
-                    None => None,
-                    Some(i) => rc.rank(left_alphabet, object, i)
-                };
-                //put the child back in to the option
-                let _ignore = self.right_child.replace(rc);
-                rank_right
+                if let Some(ref rc) = self.right_child {
+                    //recursive rank from the leave
+                    let rank_right = match self.bit_vec.rank_0(n){
+                        None => None,
+                        Some(i) => rc.rank(left_alphabet, object, i)
+                    };
+                    rank_right
+                } else {
+                    panic!("There should be a right child but there isn't!");
+                }
             }
         } else {
             //Character is not in alphabet
