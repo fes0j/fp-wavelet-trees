@@ -13,7 +13,7 @@ pub trait WaveletTree<T> {
     fn new(vector: impl Iterator<Item = T>) -> Self;
     fn access(&mut self, position: u64) -> Option<T>;
     fn select(&mut self, object: T, n: u64) -> Option<u64>;
-    fn rank(&self, object: T, n: u32) -> Option<u32>;
+    fn rank(&mut self, object: T, n: u64) -> Option<u64>;
 }
 
 /// A WaveletTree with Pointers is represented here
@@ -51,9 +51,8 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreePointer<T> {
         self.root_node.select(object, n, &self.alphabet[..])
     }
 
-    fn rank(&self, object: T, n: u32) -> Option<u32> {
-        //number of characters until position n
-        None
+    fn rank(&mut self, object: T, n: u64) -> Option<u64> {
+        self.root_node.rank(&self.alphabet[..], object, n)
     }
 }
 
@@ -232,6 +231,50 @@ impl WaveletTreeNode {
                 }
             }
         } else {
+            None
+        }
+    }
+
+    /// Returns the number of occurences of a character in the sequence until position n
+    pub fn rank<T: PartialEq + Copy>(&mut self, alphabet: &[T], object: T, n: u64) -> Option<u64> {
+        //Determine in which half of the alphabet the character is
+        let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
+        if left_alphabet.contains(&object) {
+            //already at leaf level
+            if left_alphabet.len() == 1 {
+                self.bit_vec.rank_0(n)
+            } else {
+                //take the child out of the option
+                let lc = self.left_child.take();
+                let mut lc = lc.unwrap();
+                //recursive rank from the leave
+                let rank_left = match self.bit_vec.rank_0(n){
+                    None => None,
+                    Some(i) => lc.rank(left_alphabet, object, i)
+                };
+                //put the child back in to the option
+                let _ignore = self.left_child.replace(lc);
+                rank_left
+            }
+        } else if right_alphabet.contains(&object) {
+            //already at leaf level
+            if right_alphabet.len() == 1 {
+                self.bit_vec.rank_1(n)
+            } else {
+                //take the child out of the option
+                let rc = self.right_child.take();
+                let mut rc = rc.unwrap();
+                //recursive rank from the leave
+                let rank_right = match self.bit_vec.rank_0(n){
+                    None => None,
+                    Some(i) => rc.rank(left_alphabet, object, i)
+                };
+                //put the child back in to the option
+                let _ignore = self.right_child.replace(rc);
+                rank_right
+            }
+        } else {
+            //Character is not in alphabet
             None
         }
     }
@@ -450,4 +493,25 @@ mod tests {
         assert_eq!(w_tree.select('a', 2), None);
         assert_eq!(w_tree.select('b', 3), None);
     }
+
+    #[test]
+    fn test_rank_2_letters() {
+        //let test_string = "aaaaaaaaaabsbsbdsbdsabb";
+        let test_string = "ababababababab";
+        let mut w_tree = WaveletTreePointer::new(test_string.clone().chars());
+
+        assert_eq!(w_tree.rank('a', 0), Some(1));
+        assert_eq!(w_tree.rank('b', 0), Some(0));
+
+        assert_eq!(w_tree.rank('a', 6), Some(4));
+        assert_eq!(w_tree.rank('b', 6), Some(3));
+
+        assert_eq!(w_tree.rank('a', 13), Some(7));
+        assert_eq!(w_tree.rank('b', 13), Some(7));
+
+        assert_eq!(w_tree.rank('b', 17), None);
+
+        assert_eq!(w_tree.rank('c', 5), None);
+    }
+
 }
