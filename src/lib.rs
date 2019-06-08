@@ -514,4 +514,26 @@ mod tests {
         assert_eq!(w_tree.rank('c', 5), None);
     }
 
+    #[test]
+    fn test_rank_unicode() {
+        let test_string = "Hello world, こんにちは世界, Привет, мир";
+        let mut w_tree: WaveletTreePointer<char> = WaveletTree::new(test_string.chars());
+
+        //println!("{:#?}", w_tree);
+        assert_eq!(w_tree.rank('o', 32), Some(2));
+        assert_eq!(w_tree.rank('世', 32), Some(1));
+        assert_eq!(w_tree.rank('и', 32), Some(2));
+
+        /*assert_eq!(w_tree.rank('o', 16), Some(2));
+        assert_eq!(w_tree.rank('世', 16), Some(0));
+        assert_eq!(w_tree.rank('и', 16), Some(0));
+
+        assert_eq!(w_tree.rank('o', 0), Some(0));
+        assert_eq!(w_tree.rank('世', 0), Some(0));
+        assert_eq!(w_tree.rank('и', 0), Some(0));
+
+        assert_eq!(w_tree.rank('木', 32), None);*/
+    }
+
+
 }
