@@ -517,6 +517,18 @@ mod tests {
     }
  */
     #[test]
+    fn test_rank_5_letter() {
+        let test_string = "abcde";
+        let mut w_tree = WaveletTreePointer::new(test_string.clone().chars());
+
+        assert_eq!(w_tree.rank('a', 0), Some(1));
+        assert_eq!(w_tree.rank('b', 1), Some(1));
+        assert_eq!(w_tree.rank('c', 2), Some(1));
+        assert_eq!(w_tree.rank('d', 3), Some(1));
+        assert_eq!(w_tree.rank('e', 4), Some(1));
+    }
+
+    #[test]
     fn test_rank_unicode() {
         let test_string = "Hellow orld, こんにちは世界, Привет, мир";
         let test_string = UnicodeSegmentation::graphemes(test_string, true).collect::<Vec<&str>>();
