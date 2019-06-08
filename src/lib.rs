@@ -11,7 +11,7 @@ static SUPERBLOCK_SIZE: usize = 1;
 /// WaveletTrees
 pub trait WaveletTree<T> {
     fn new(vector: impl Iterator<Item = T>) -> Self;
-    fn access(&self, position: u64) -> Option<T>;
+    fn access(&mut self, position: u64) -> Option<T>;
     fn select(&mut self, object: T, n: u64) -> Option<u64>;
     fn rank(&self, object: T, n: u32) -> Option<u32>;
 }
@@ -42,7 +42,7 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreePointer<T> {
         WaveletTreePointer::from_vec(iterator.collect())
     }
 
-    fn access(&self, position: u64) -> Option<T> {
+    fn access(&mut self, position: u64) -> Option<T> {
         self.root_node.access(position, &self.alphabet[..])
     }
 
@@ -109,22 +109,21 @@ impl WaveletTreeNode {
     ) -> Option<Box<WaveletTreeNode>> {
         // When the alphabet only consists of two symbols, no new child nodes are needed.
         // The resulting data would only consist of zeros
-        if 2 <= alphabet.len() {
+        if alphabet.len() >= 2 {
             //split alphabet
             let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
 
             //fill partial strings
-            let left_string = input_string
+            let left_string: Vec<T> = input_string
                 .clone()
                 .into_iter()
                 .filter(|c| left_alphabet.contains(c))
                 .collect();
-            let right_string = input_string
+            let right_string: Vec<T> = input_string
                 .clone()
                 .into_iter()
                 .filter(|c| right_alphabet.contains(c))
                 .collect();
-
             //create bitvector of string length
             let mut bitvector: BitVec<u8> = BitVec::with_capacity(input_string.len() as u64);
             //fill bitvector
@@ -134,11 +133,13 @@ impl WaveletTreeNode {
 
             //create rankselect structure
             let rs = RankSelect::new(bitvector, SUPERBLOCK_SIZE);
+            //recusivley create left/right child from substring and partial alphabet
+            let left_child= WaveletTreeNode::new(left_string, left_alphabet);
+            let right_child= WaveletTreeNode::new(right_string, right_alphabet);
             Some(Box::new(WaveletTreeNode {
                 bit_vec: rs,
-                //recusivley create left/right child from substring and partial alphabet
-                left_child: WaveletTreeNode::new(left_string, &left_alphabet),
-                right_child: WaveletTreeNode::new(right_string, &right_alphabet),
+                left_child,
+                right_child
             }))
         } else {
             //edge case of an empty or single char string is handled in WaveletTree::new
@@ -146,7 +147,7 @@ impl WaveletTreeNode {
         }
     }
 
-    fn access<T: PartialEq + Copy>(&self, position: u64, alphabet: &[T]) -> Option<T> {
+    fn access<T: PartialEq + Copy>(&mut self, position: u64, alphabet: &[T]) -> Option<T> {
         //check if position is valid
         if self.bit_vec.bits().len() <= position {
             return None;
@@ -157,20 +158,34 @@ impl WaveletTreeNode {
         }
         //split alphabet
         let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
-        //if length of alphabet is 2 return left/right char
-        if alphabet.len() == 2 {
-            //switch on 0/1
-            match self.bit_vec.bits()[position] {
-                false => Some(left_alphabet[0]),
-                true => Some(right_alphabet[0]),
+        //look left
+        if self.bit_vec.bits()[position]==false {
+            //recursion end case
+            if left_alphabet.len()==1{
+                Some(left_alphabet[0])
+            }else{//access left child
+                //take the child out of the option
+                let lc = self.left_child.take();
+                let mut lc = lc.unwrap();
+                let num=self.bit_vec.rank_0(position);
+                let ret = lc.access(num.unwrap()-1, &left_alphabet);
+                //put the child back in to the option
+                let _ignore = self.left_child.replace(lc);
+                ret
             }
-        } else {
-            //alphabet is longer
-            //recursivley access(rank0/1,left/right-alphabet)
-            match self.bit_vec.bits()[position] {
-                //unwrap must be safe caus position is valid
-                false => self.access(self.bit_vec.rank_0(position).unwrap(), &left_alphabet),
-                true => self.access(self.bit_vec.rank_1(position).unwrap(), &right_alphabet),
+        } else {//look right
+            //recursion end case
+            if right_alphabet.len()==1{
+                Some(right_alphabet[0])
+            }else{//access right child
+                //take the child out of the option
+                let rc = self.right_child.take();
+                let mut rc = rc.unwrap();
+                let num=self.bit_vec.rank_1(position);
+                let ret = rc.access(num.unwrap()-1, &right_alphabet);
+                //put the child back in to the option
+                let _ignore = self.right_child.replace(rc);
+                ret
             }
         }
     }
@@ -298,6 +313,27 @@ mod tests {
         assert_eq!(*right_child.bit_vec.bits(), right_child_bits);
     }
 
+    //test for basic creation
+    #[test]
+    fn test_7_letter_tree() {
+        let string :Vec<char>= "abcdefg".chars().collect();
+        let seven_tree: WaveletTreePointer<char> = WaveletTreePointer::new(string.into_iter());
+        // let alphabet: Vec<char> = input_string.chars().unique().collect();
+
+        // assert_eq!(seven_tree.alphabet, alphabet);
+        assert!(seven_tree.root_node.left_child.is_some());
+        assert!(seven_tree.root_node.right_child.is_some());
+        let mut lc = seven_tree.root_node.left_child.unwrap();
+        let mut rc = seven_tree.root_node.right_child.unwrap();
+        assert!(lc.left_child.is_none());
+        assert!(lc.right_child.is_some());
+        assert!(rc.left_child.is_some());
+        assert!(rc.right_child.is_some());
+        let left_right = BitVec::from_bits(&[false, true]);
+        assert_eq!(*lc.right_child.unwrap().bit_vec.bits(),left_right);
+        
+    }
+
     /// Testing tests
     #[test]
     fn test_new() {
@@ -326,7 +362,7 @@ mod tests {
     #[test]
     fn test_access_empty() {
         let test_string: Vec<char> = "".chars().collect();
-        let w_tree = WaveletTreePointer::new("".chars());
+        let mut w_tree = WaveletTreePointer::new("".chars());
 
         assert_eq!(None, w_tree.access(0));
     }
@@ -335,21 +371,23 @@ mod tests {
     #[test]
     fn test_access_1_letter() {
         let test_string: Vec<char> = "a".chars().collect();
-        let w_tree = WaveletTreePointer::new("a".chars());
+        let mut w_tree = WaveletTreePointer::new("a".chars());
 
         assert_eq!(test_string[0], w_tree.access(0).unwrap());
         assert_eq!(None, w_tree.access(1));
     }
 
     #[test]
-    fn test_access_5_letter() {
-        let test_string: Vec<char> = "abcde".chars().collect();
-        let w_tree = WaveletTreePointer::new("abcde".chars());
+    fn test_access_7_letter() {
+        let test_string: Vec<char> = "abcdefg".chars().collect();
+        let mut w_tree = WaveletTreePointer::new(test_string.clone().into_iter());
 
         assert_eq!(test_string[0], w_tree.access(0).unwrap());
+        assert_eq!(test_string[1], w_tree.access(1).unwrap());
         assert_eq!(test_string[2], w_tree.access(2).unwrap());
         assert_eq!(test_string[4], w_tree.access(4).unwrap());
-        assert_eq!(None, w_tree.access(5));
+        assert_eq!(test_string[6], w_tree.access(6).unwrap());
+        assert_eq!(None, w_tree.access(7));
     }
 
     /// Simple Test for select
