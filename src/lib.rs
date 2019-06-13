@@ -11,9 +11,9 @@ static SUPERBLOCK_SIZE: usize = 1;
 /// WaveletTrees
 pub trait WaveletTree<T> {
     fn new(vector: impl Iterator<Item = T>) -> Self;
-    fn access(&mut self, position: u64) -> Option<T>;
-    fn select(&mut self, object: T, n: u64) -> Option<u64>;
-    fn rank(&mut self, object: T, n: u64) -> Option<u64>;
+    fn access(&self, position: u64) -> Option<T>;
+    fn select(&self, object: T, n: u64) -> Option<u64>;
+    fn rank(&self, object: T, n: u64) -> Option<u64>;
 }
 
 /// A WaveletTree with Pointers is represented here
@@ -42,16 +42,16 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreePointer<T> {
         WaveletTreePointer::from_vec(iterator.collect())
     }
 
-    fn access(&mut self, position: u64) -> Option<T> {
+    fn access(&self, position: u64) -> Option<T> {
         self.root_node.access(position, &self.alphabet[..])
     }
 
     /// Return position of n-th character
-    fn select(&mut self, object: T, n: u64) -> Option<u64> {
+    fn select(&self, object: T, n: u64) -> Option<u64> {
         self.root_node.select(object, n, &self.alphabet[..])
     }
 
-    fn rank(&mut self, object: T, n: u64) -> Option<u64> {
+    fn rank(&self, object: T, n: u64) -> Option<u64> {
         self.root_node.rank(&self.alphabet[..], object, n)
     }
 }
@@ -133,12 +133,12 @@ impl WaveletTreeNode {
             //create rankselect structure
             let rs = RankSelect::new(bitvector, SUPERBLOCK_SIZE);
             //recusivley create left/right child from substring and partial alphabet
-            let left_child= WaveletTreeNode::new(left_string, left_alphabet);
-            let right_child= WaveletTreeNode::new(right_string, right_alphabet);
+            let left_child = WaveletTreeNode::new(left_string, left_alphabet);
+            let right_child = WaveletTreeNode::new(right_string, right_alphabet);
             Some(Box::new(WaveletTreeNode {
                 bit_vec: rs,
                 left_child,
-                right_child
+                right_child,
             }))
         } else {
             //edge case of an empty or single char string is handled in WaveletTree::new
@@ -146,7 +146,8 @@ impl WaveletTreeNode {
         }
     }
 
-    fn access<T: PartialEq + Copy>(&mut self, position: u64, alphabet: &[T]) -> Option<T> {
+    fn access<T: PartialEq + Copy>(&self, position: u64, alphabet: &[T]) -> Option<T> {
+        //output: object at position index
         //check if position is valid
         if self.bit_vec.bits().len() <= position {
             return None;
@@ -157,80 +158,62 @@ impl WaveletTreeNode {
         }
         //split alphabet
         let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
-        //look left
-        if self.bit_vec.bits()[position]==false {
-            //recursion end case
-            if left_alphabet.len()==1{
+        //proceed left or right
+        if self.bit_vec.bits()[position] == false {
+            //object from left alphabet
+            if let Some(ref lc) = self.left_child {
+                //if there is a child go there
+                let num = self.bit_vec.rank_0(position).unwrap();
+                lc.access(num - 1, &left_alphabet)
+            } else {
                 Some(left_alphabet[0])
-            }else{//access left child
-                //take the child out of the option
-                let lc = self.left_child.take();
-                let mut lc = lc.unwrap();
-                let num=self.bit_vec.rank_0(position);
-                let ret = lc.access(num.unwrap()-1, &left_alphabet);
-                //put the child back in to the option
-                let _ignore = self.left_child.replace(lc);
-                ret
-            }
-        } else {//look right
-            //recursion end case
-            if right_alphabet.len()==1{
+            } //end of recursion
+        } else {
+            //object from right alphabet
+            //access right child
+            if let Some(ref rc) = self.right_child {
+                //if there is a child go there
+                let num = self.bit_vec.rank_1(position).unwrap();
+                rc.access(num - 1, &right_alphabet)
+            } else {
                 Some(right_alphabet[0])
-            }else{//access right child
-                //take the child out of the option
-                let rc = self.right_child.take();
-                let mut rc = rc.unwrap();
-                let num=self.bit_vec.rank_1(position);
-                let ret = rc.access(num.unwrap()-1, &right_alphabet);
-                //put the child back in to the option
-                let _ignore = self.right_child.replace(rc);
-                ret
-            }
+            } //end of recursion
         }
     }
 
-    fn select<T: PartialEq + Copy>(&mut self, character: T, n: u64, alphabet: &[T]) -> Option<u64> {
+    fn select<T: PartialEq + Copy>(&self, character: T, n: u64, alphabet: &[T]) -> Option<u64> {
         //output: position of nth character
         //split alphabet
         let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
         //if left alphabet contains character
         if left_alphabet.contains(&character) {
-            if left_alphabet.len() == 1 {
-                self.bit_vec.select_0(n)
-            } else {
-                //take the child out of the option
-                let lc = self.left_child.take();
-                let mut lc = lc.unwrap();
-                //posinchild is the position of the nth character in the left child
-                let pos_in_child = lc.select(character, n, left_alphabet);
-                //put the child back in to the option
-                let _ignore = self.left_child.replace(lc);
-                //pos in current is the position of the nth character in the current node
-                match pos_in_child {
+            if let Some(ref lc) = self.left_child {
+                //if there is a child go there
+                match lc.select(character, n, left_alphabet) {
+                    //position of the nth character in the left child
                     //+1 because recursive step returned an index while the #of occurences is needed
                     Some(x) => self.bit_vec.select_0(x + 1),
                     None => None,
                 }
+            } else {
+                //there was no child, look for 0s
+                self.bit_vec.select_0(n)
             }
         } else if right_alphabet.contains(&character) {
-            if right_alphabet.len() == 1 {
-                self.bit_vec.select_1(n)
-            } else {
-                //take the child out of the option
-                let rc = self.right_child.take();
-                let mut rc = rc.unwrap();
-                //posinchild is the position of the nth character in the left child
-                let pos_in_child = rc.select(character, n, right_alphabet);
-                //put the child back in to the option
-                let _ignore = self.right_child.replace(rc);
-                //pos in current is the position of the nth character in the current node
-                match pos_in_child {
+            if let Some(ref rc) = self.right_child {
+                //if there is a child go there
+                match rc.select(character, n, right_alphabet) {
+                    //position of the nth character in the left child
                     //+1 because recursive step returned an index while the #of occurences is needed
                     Some(x) => self.bit_vec.select_1(x + 1),
                     None => None,
                 }
+            } else {
+                //there was no child, look for 1s
+                self.bit_vec.select_1(n)
             }
         } else {
+            //Character is not in alphabet
             None
         }
     }
@@ -244,11 +227,11 @@ impl WaveletTreeNode {
             if left_alphabet.len() == 1 {
                 self.bit_vec.rank_0(n)
             } else {
-                if let Some(ref lc) = self.left_child{
+                if let Some(ref lc) = self.left_child {
                     //recursive rank from the leave
-                    let rank_left = match self.bit_vec.rank_0(n){
+                    let rank_left = match self.bit_vec.rank_0(n) {
                         None => None,
-                        Some(i) => lc.rank(left_alphabet, object, i)
+                        Some(i) => lc.rank(left_alphabet, object, i),
                     };
                     rank_left
                 } else {
@@ -262,9 +245,9 @@ impl WaveletTreeNode {
             } else {
                 if let Some(ref rc) = self.right_child {
                     //recursive rank from the leave
-                    let rank_right = match self.bit_vec.rank_0(n){
+                    let rank_right = match self.bit_vec.rank_0(n) {
                         None => None,
-                        Some(i) => rc.rank(left_alphabet, object, i)
+                        Some(i) => rc.rank(left_alphabet, object, i),
                     };
                     rank_right
                 } else {
@@ -357,7 +340,7 @@ mod tests {
     //test for basic creation
     #[test]
     fn test_7_letter_tree() {
-        let string :Vec<char>= "abcdefg".chars().collect();
+        let string: Vec<char> = "abcdefg".chars().collect();
         let seven_tree: WaveletTreePointer<char> = WaveletTreePointer::new(string.into_iter());
         // let alphabet: Vec<char> = input_string.chars().unique().collect();
 
@@ -371,8 +354,7 @@ mod tests {
         assert!(rc.left_child.is_some());
         assert!(rc.right_child.is_some());
         let left_right = BitVec::from_bits(&[false, true]);
-        assert_eq!(*lc.right_child.unwrap().bit_vec.bits(),left_right);
-        
+        assert_eq!(*lc.right_child.unwrap().bit_vec.bits(), left_right);
     }
 
     /// Testing tests
