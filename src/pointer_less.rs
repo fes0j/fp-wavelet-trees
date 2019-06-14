@@ -21,34 +21,34 @@ pub struct WaveletTreeCompact<T: PartialEq + Copy> {
 }*/
 
 impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
-    pub fn new(input: &[T]) -> WaveletTreeCompact<T> {
+    pub fn new(input: Vec<T>) -> WaveletTreeCompact<T> {
         //Create alphabet
-        let mut alphabet = vec![];
+        let mut alphabet: Vec<T> = Vec::new();
         input.iter().map(|x| {
             if !alphabet.contains(&x) {
-                alphabet.push(&x);
+                alphabet.push(*x);
             }
         });
 
         //Create vector for levels
-        let mut levels: Vec<BitVec> = Vec::new();
+        let mut levels: Vec<BitVec<u8>> = Vec::new();
 
         //Create bitvecs for levels
         WaveletTreeCompact::create_bitvec(0, &mut levels, &input[..], &alphabet[..]);
 
         //Append all the levels into one big bitvec
-        let bit_vec = BitVec::new();
+        let bit_vec:BitVec<u8> = BitVec::new();
         for l in levels {
             bit_vec.bit_concat(l);
         }
 
         WaveletTreeCompact {
-            alphabet,
+            alphabet: alphabet.to_owned(),
             bit_vec: RankSelect::new(bit_vec, 1),
         }
     }
 
-    fn create_bitvec(level: usize, levels: &mut Vec<BitVec>, sequence: &[T], alphabet: &[T]) {
+    fn create_bitvec(level: usize, levels: &mut Vec<BitVec<u8>>, sequence: &[T], alphabet: &[T]) {
         if alphabet.len() >= 2 {
             //Split alphabet
             let (left_alphabet, right_alphabet) = alphabet.split_at(
@@ -56,8 +56,8 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
                     ((alphabet.len() + 1) as f64).ln().ceil() as u32
                 )
             );
-            let mut l_seq = vec![];
-            let mut r_seq = vec![];
+            let mut l_seq = Vec::new();
+            let mut r_seq = Vec::new();
             let mut local_bitvec = BitVec::new();
 
             //Fill left/right sequence and create bitvector for local "node"
