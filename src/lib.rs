@@ -231,7 +231,9 @@ impl WaveletTreeNode {
                     //recursive rank from the leave
                     let rank_left = match self.bit_vec.rank_0(n) {
                         None => None,
-                        Some(i) => lc.rank(left_alphabet, object, i),
+                        //node does not contain alphabet up to n
+                        Some(0) => Some(0),
+                        Some(i) => lc.rank(left_alphabet, object, i - 1),
                     };
                     rank_left
                 } else {
@@ -245,9 +247,11 @@ impl WaveletTreeNode {
             } else {
                 if let Some(ref rc) = self.right_child {
                     //recursive rank from the leave
-                    let rank_right = match self.bit_vec.rank_0(n) {
+                    let rank_right = match self.bit_vec.rank_1(n) {
                         None => None,
-                        Some(i) => rc.rank(left_alphabet, object, i),
+                        //node does not contain alphabet up to n
+                        Some(0) => Some(0),
+                        Some(i) => rc.rank(right_alphabet, object, i - 1),
                     };
                     rank_right
                 } else {
@@ -284,6 +288,8 @@ impl fmt::Debug for WaveletTreeNode {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::ffi::OsString;
+    use unicode_segmentation::UnicodeSegmentation;
 
     /// # Test with two different letters
     /// This will test for alphabet and child nodes.
@@ -492,6 +498,40 @@ mod tests {
         assert_eq!(w_tree.rank('b', 17), None);
 
         assert_eq!(w_tree.rank('c', 5), None);
+    }
+
+    #[test]
+    fn test_rank_5_letter() {
+        let test_string = "abcde";
+        let mut w_tree = WaveletTreePointer::new(test_string.clone().chars());
+
+        assert_eq!(w_tree.rank('a', 0), Some(1));
+        assert_eq!(w_tree.rank('b', 1), Some(1));
+        assert_eq!(w_tree.rank('c', 2), Some(1));
+        assert_eq!(w_tree.rank('d', 3), Some(1));
+        assert_eq!(w_tree.rank('e', 4), Some(1));
+    }
+
+    #[test]
+    fn test_rank_unicode() {
+        let test_string = "Hello world, こんにちは世界, Привет, мир";
+        let test_string = UnicodeSegmentation::graphemes(test_string, true).collect::<Vec<&str>>();
+        let mut w_tree: WaveletTreePointer<&str> = WaveletTree::new(test_string.into_iter());
+
+        //println!("{:#?}", w_tree);
+        assert_eq!(w_tree.rank("o", 4), Some(1));
+        assert_eq!(w_tree.rank("世", 32), Some(1));
+        assert_eq!(w_tree.rank("и", 32), Some(2));
+
+        assert_eq!(w_tree.rank("o", 16), Some(2));
+        assert_eq!(w_tree.rank("世", 16), Some(0));
+        assert_eq!(w_tree.rank("и", 16), Some(0));
+
+        assert_eq!(w_tree.rank("o", 0), Some(0));
+        assert_eq!(w_tree.rank("世", 0), Some(0));
+        assert_eq!(w_tree.rank("и", 0), Some(0));
+
+        assert_eq!(w_tree.rank("木", 32), None);
     }
 
 }
