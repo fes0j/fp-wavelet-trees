@@ -1,46 +1,66 @@
-use rs_graph::*;
-use bv::BitVec;
-use bio::data_structures::rank_select::RankSelect;
-use crate::WaveletTree;
 use crate::wavelet_tree_pointer_based::*;
+use crate::WaveletTree;
+use bio::data_structures::rank_select::RankSelect;
+use bv::BitVec;
 use core::borrow::Borrow;
+use rs_graph::*;
 
 pub trait GraphWithWT {
-    fn new ( ) -> Self;
-    fn neighbor(&self, node: u64, nth_neighbor: u64  )-> Option<u64>;
-    fn reverse_neigbor (&self, node: u64, nth_neighbor: u64  )-> Option<u64>;
+    // Creates an empty WaveletTreeGraph with 'size' nodes
+    fn new(size: u64) -> Self;
+    // Adds an edge from startnode to endnode
+    // does nothing (or panics?) if the WaveletTree is already created?
+    fn add_edge(&mut self, startnode: u64, endnode: u64);
+    // Creates the bitmap and the WaveletTree from the underlying list (if not done yet)
+    // returns the 'nth_neighbor' of the 'node' or None if there is None
+    fn neighbor(&mut self, node: u64, nth_neighbor: u64) -> Option<u64>;
+    // Creates the bitmap and the WaveletTree from the underlying list (if not done yet)
+    // returns the 'nth_reverse_neighbor' of the 'node' or None if there is None
+    fn reverse_neigbor(&mut self, node: u64, nth_reverse_neighbor: u64) -> Option<u64>;
 }
 
 pub struct WaveletTreeGraph {
-    bitmap : RankSelect,
-    list : u8,
-    wavelet_tree: WaveletTreePointer<u64>,
+    bit_vec: BitVec<u8>,
+    bitmap: Option<RankSelect>,
+    list: Vec<u64>,
+    wavelet_tree: Option<WaveletTreePointer<u64>>,
 }
 
-impl GraphWithWT for WaveletTreeGraph{
-    fn new() -> Self {
+impl GraphWithWT for WaveletTreeGraph {
+    fn new(size: u64) -> Self {
+        WaveletTreeGraph {
+            bit_vec: BitVec::new_fill(true, size),
+            bitmap: None,
+            list: vec![],
+            wavelet_tree: None,
+        }
+    }
+
+    fn add_edge(&mut self, startnode: u64, endnode: u64) {
         unimplemented!()
     }
 
-    fn neighbor(&self, node: u64, nth_neighbor: u64) -> Option<u64> {
-        let l = self.bitmap.select(node);
+    fn neighbor(&mut self, node: u64, nth_neighbor: u64) -> Option<u64> {
+        let l = self.bitmap.as_mut().unwrap().select(node);
         if l.is_none() {
-            None
+            return None;
         }
-        self.wavelet_tree.borrow().access(l.unwrap() + nth_neighbor - node)
+        self.wavelet_tree
+            .as_mut()
+            .unwrap()
+            .access(l.unwrap() + nth_neighbor - node)
     }
 
-    fn reverse_neigbor(&self, node: u64, nth_neighbor: u64) -> Option<u64> {
+    fn reverse_neigbor(&mut self, node: u64, nth_neighbor: u64) -> Option<u64> {
         unimplemented!()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use rs_graph::*;
-    use rs_graph::traits::Directed;
     use super::*;
-
+    use rs_graph::traits::Directed;
+    use rs_graph::*;
 
     #[test]
     fn test_new() {
@@ -62,8 +82,6 @@ mod tests {
         g.outedges(nodes[0]).for_each(|(_e, n)| println!("{:?}", n));
 
         g.add_edge(nodes[3], nodes[2]);
-
-
     }
 
     /// Test if the wavelet-tree graph presents all correct neighbors
@@ -83,7 +101,5 @@ mod tests {
 
         let w_graph = WaveletTreeGraph::new();
         assert_eq!(2, w_graph.neighbor(0, 1));
-
-
     }
 }
