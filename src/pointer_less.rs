@@ -63,10 +63,10 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
             //Fill left/right sequence and create bitvector for local "node"
             sequence.iter().map(|x| {
                 if left_alphabet.contains(x) {
-                    l_seq.push(x);
+                    l_seq.push(*x);
                     local_bitvec.push(false);
                 } else {
-                    r_seq.push(x);
+                    r_seq.push(*x);
                     local_bitvec.push(true);
                 }
             });
