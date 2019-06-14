@@ -28,7 +28,7 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
             if !alphabet.contains(&x) {
                 alphabet.push(*x);
             }
-        });
+        }).count();
 
         //Create vector for levels
         let mut levels: Vec<BitVec<u8>> = Vec::new();
@@ -69,7 +69,7 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
                     r_seq.push(*x);
                     local_bitvec.push(true);
                 }
-            });
+            }).count();
 
 
             //Append to level bitvec
@@ -138,10 +138,12 @@ mod tests {
     use super::*;
 
 
-
-    fn test_new(){
+    #[test]
+    fn test_new_pointer_free(){
         let w_tree = WaveletTreeCompact::from("alabar_a_la_alabarda");
 
+
+        assert_eq!(w_tree, w_tree);
         println!("{:?}", w_tree);
 
     }
