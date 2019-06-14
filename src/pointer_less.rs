@@ -127,6 +127,12 @@ impl<T: PartialEq + Copy> From<Iterator<Item = T>> {
 
 }*/
 
+impl From<&str> for WaveletTreeCompact<char> {
+    fn from(input: &str) -> Self {
+        WaveletTreeCompact::new(input.chars().collect())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -134,7 +140,7 @@ mod tests {
 
 
     fn test_new(){
-        let w_tree = WaveletTreeCompact::new("alabar_a_la_alabarda");
+        let w_tree = WaveletTreeCompact::from("alabar_a_la_alabarda");
 
         println!("{:?}", w_tree);
 
