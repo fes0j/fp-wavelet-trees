@@ -17,6 +17,7 @@ pub trait WaveletTree<T> {
 }
 
 pub mod wavelet_tree_pointer_based;
+pub mod graph_wt;
 
 
 
