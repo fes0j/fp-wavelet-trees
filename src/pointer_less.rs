@@ -32,7 +32,7 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreeCompact<T> {
     }
 
     fn rank(&self, object: T, n: u64) -> Option<u64> {
-        unimplemented!()
+        self.rank_intern(&self.alphabet[..],object,n,0,self.sequence_len-1)
     }
 }
 
@@ -127,23 +127,23 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
         }else{
             alphabet.split_at(
                     2usize.pow(
-                        ((alphabet.len()+1) as f64).log2().ceil() as u32 -1
-                    )-1
+                        ((alphabet.len()) as f64).log2().ceil() as u32 -1
+                    )
             )
         }
     }
     
-    fn rank(&self, object: T, n: u64) -> Option<u64> {
-        self.rank_intern(&self.alphabet[..],object,n,0,self.sequence_len-1)
-    }
-    
     fn rank_intern(&self,alphabet: &[T], object: T, n: u64, left: u64, right: u64) -> Option<u64> {
         //Split alphabet
+        assert!(left != right);
         let (left_alphabet, right_alphabet) = WaveletTreeCompact::splitalphabet(alphabet);
         if left_alphabet.contains(&object) {
             if left_alphabet.len()==1 {
+                //need to account for the left most bit itselfe but can not rely on left>0
                 match (self.bit_vec.rank_0(left+n),self.bit_vec.rank_0(left)){
-                    (Some(i),Some(j)) => Some(i-j),
+                    (Some(i),Some(j)) => match self.bit_vec.bits()[left] {
+                                            true => Some(i-j),
+                                            false => Some(i-j+1)}
                     _ => None
                 }
             }else{
@@ -154,7 +154,6 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
                 let left_child_right = left_child_left+r-l-1;
                 let right_child_left = left_child_right+1;
                 let right_child_right = right+self.sequence_len;
-                assert!(right_child_right-left_child_left==right-left);
                 self.rank_intern(left_alphabet,object, n,left_child_left,left_child_right)
                 }else{
                     //out of bounds
@@ -163,8 +162,11 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
             }
         } else if right_alphabet.contains(&object) {
             if right_alphabet.len()==1 {
+                //need to account for the left most bit itselfe but can not rely on left>0
                 match (self.bit_vec.rank_1(right+n),self.bit_vec.rank_1(right)){
-                    (Some(i),Some(j)) => Some(i-j),
+                    (Some(i),Some(j)) => match self.bit_vec.bits()[left] {
+                                            true => Some(i-j+1),
+                                            false => Some(i-j)}
                     _ => None
                 }
             }else{
@@ -174,7 +176,6 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
                 let left_child_right = left_child_left+r-l-1;
                 let right_child_left = left_child_right+1;
                 let right_child_right = right+self.sequence_len;
-                assert!(right_child_right-left_child_left==right-left);
                 self.rank_intern(right_alphabet,object, n,right_child_left,right_child_right)
                 }else{
                     //out of bounds
@@ -248,13 +249,45 @@ mod tests {
     }
     
     #[test]
+    fn test_rank_2_letters(){
+        let test_string = "aaaaabbbbbcde".chars().collect();
+        let mut w_tree = WaveletTreeCompact::new(test_string);
+        
+        assert_eq!(w_tree.rank('a', 0), Some(1));
+        assert_eq!(w_tree.rank('a', 1), Some(2));
+        assert_eq!(w_tree.rank('a', 2), Some(3));
+        assert_eq!(w_tree.rank('a', 3), Some(4));
+        assert_eq!(w_tree.rank('a', 4), Some(5));
+        assert_eq!(w_tree.rank('a', 5), Some(5));
+        assert_eq!(w_tree.rank('a', 6), Some(5));
+    }
+    
+    #[test]
+    fn test_split_alphabet(){
+        let alphabet :Vec<char>="abcde".chars().collect();
+        let (l,r)=WaveletTreeCompact::splitalphabet(&alphabet[..]);
+        
+        assert!(alphabet.len()==5);
+        assert_eq!(l.len(),4);
+        assert_eq!(r.len(),1);
+        
+        let test_string = "abcde".chars().collect();
+        let mut w_tree = WaveletTreeCompact::new(test_string);
+        
+        assert_eq!(w_tree.bit_vec.bits()[0],false);
+        assert_eq!(w_tree.bit_vec.bits()[1],false);
+        assert_eq!(w_tree.bit_vec.bits()[2],false);
+        assert_eq!(w_tree.bit_vec.bits()[3],false);
+        assert_eq!(w_tree.bit_vec.bits()[4],true);
+        assert_eq!(w_tree.bit_vec.bits()[5],false);
+    }
+    
+    #[test]
     fn test_rank_5_letter() {
         let test_string = "abcde".chars().collect();
         let mut w_tree = WaveletTreeCompact::new(test_string);
-
-        assert!(w_tree.bit_vec.bits().len()>0);
         
-        assert_eq!(w_tree.rank('a', 0), Some(1));
+        assert_eq!(w_tree.rank('a', 3), Some(1));
         assert_eq!(w_tree.rank('b', 1), Some(1));
         assert_eq!(w_tree.rank('c', 2), Some(1));
         assert_eq!(w_tree.rank('d', 3), Some(1));
