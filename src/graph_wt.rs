@@ -7,7 +7,7 @@ use rs_graph::*;
 
 pub trait GraphWithWT {
     // Creates an empty WaveletTreeGraph with 'size' nodes
-    fn new(size: u64) -> Self;
+    fn new(size: usize) -> Self;
     // Adds an edge from startnode to endnode
     // does nothing (or panics?) if the WaveletTree is already created?
     fn add_edge(&mut self, startnode: u64, endnode: u64);
@@ -20,16 +20,17 @@ pub trait GraphWithWT {
 }
 
 pub struct WaveletTreeGraph {
-    bit_vec: BitVec<u8>,
+    bit_vec: Vec<bool>,
     bitmap: Option<RankSelect>,
     list: Vec<u64>,
     wavelet_tree: Option<WaveletTreePointer<u64>>,
 }
 
 impl GraphWithWT for WaveletTreeGraph {
-    fn new(size: u64) -> Self {
+    fn new(size: usize) -> Self {
         WaveletTreeGraph {
-            bit_vec: BitVec::new_fill(true, size),
+            // fill the bit_vec with as much 'ones' as there are graph nodes
+            bit_vec: vec![true; size],
             bitmap: None,
             list: vec![],
             wavelet_tree: None,
@@ -37,7 +38,20 @@ impl GraphWithWT for WaveletTreeGraph {
     }
 
     fn add_edge(&mut self, startnode: u64, endnode: u64) {
-        unimplemented!()
+        // check if wavelet_tree wasn't created already
+        if self.wavelet_tree == None {
+            // contains the index of the (startnode+1)-th '1' in the bit_vec
+            let upper_insert_bound = select(&self.bit_vec, startnode+1);
+            if upper_insert_bound != None {
+                self.bit_vec.insert((upper_insert_bound.unwrap()-1) as usize, false);
+                self.list.insert((upper_insert_bound.unwrap()-startnode-1) as usize, endnode);
+            }
+            // this is the case if the startnode is the last node
+            else {
+                self.bit_vec.push(false);
+                self.list.push(endnode);
+            }
+        }
     }
 
     fn neighbor(&mut self, node: u64, nth_neighbor: u64) -> Option<u64> {
@@ -53,6 +67,23 @@ impl GraphWithWT for WaveletTreeGraph {
 
     fn reverse_neigbor(&mut self, node: u64, nth_neighbor: u64) -> Option<u64> {
         unimplemented!()
+    }
+}
+
+fn select(bit_vec: &Vec<bool>, n:u64) -> Option<u64>{
+    let mut i = 0;
+    let mut counter = 0;
+    loop {
+        if i >= bit_vec.len() {
+            return None;
+        }
+        if bit_vec[i] == true {
+            if counter == n {
+                return Some(i as u64);
+            }
+            counter += 1;
+        }
+        i += 1;
     }
 }
 
