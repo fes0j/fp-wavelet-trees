@@ -41,10 +41,14 @@ impl GraphWithWT for WaveletTreeGraph {
         // check if wavelet_tree wasn't created already
         if self.wavelet_tree == None {
             // contains the index of the (startnode+1)-th '1' in the bit_vec
-            let upper_insert_bound = select(&self.bit_vec, startnode+1);
+            let upper_insert_bound = select(&self.bit_vec, startnode + 1);
             if upper_insert_bound != None {
-                self.bit_vec.insert((upper_insert_bound.unwrap()-1) as usize, false);
-                self.list.insert((upper_insert_bound.unwrap()-startnode-1) as usize, endnode);
+                self.bit_vec
+                    .insert((upper_insert_bound.unwrap()) as usize, false);
+                self.list.insert(
+                    (upper_insert_bound.unwrap() - startnode - 1) as usize,
+                    endnode,
+                );
             }
             // this is the case if the startnode is the last node
             else {
@@ -55,14 +59,18 @@ impl GraphWithWT for WaveletTreeGraph {
     }
 
     fn neighbor(&mut self, node: u64, nth_neighbor: u64) -> Option<u64> {
-        let l = self.bitmap.as_mut().unwrap().select(node);
+        if self.wavelet_tree == None {
+            self.bitmap = Some(bool_vec_to_rankselect(&self.bit_vec));
+            self.wavelet_tree = Some(WaveletTreePointer::new(self.list.clone().into_iter()));
+        }
+        let l = self.bitmap.as_mut().unwrap().select(node + 1);
         if l.is_none() {
             return None;
         }
         self.wavelet_tree
             .as_mut()
             .unwrap()
-            .access(l.unwrap() + nth_neighbor - node)
+            .access(l.unwrap() + nth_neighbor - (node + 1))
     }
 
     fn reverse_neigbor(&mut self, node: u64, nth_neighbor: u64) -> Option<u64> {
@@ -70,7 +78,7 @@ impl GraphWithWT for WaveletTreeGraph {
     }
 }
 
-fn select(bit_vec: &Vec<bool>, n:u64) -> Option<u64>{
+fn select(bit_vec: &Vec<bool>, n: u64) -> Option<u64> {
     let mut i = 0;
     let mut counter = 0;
     loop {
@@ -87,13 +95,21 @@ fn select(bit_vec: &Vec<bool>, n:u64) -> Option<u64>{
     }
 }
 
+fn bool_vec_to_rankselect(bit_vec: &Vec<bool>) -> RankSelect {
+    let mut bits: BitVec<u8> = BitVec::new();
+    for b in bit_vec {
+        bits.push(*b);
+    }
+    RankSelect::new(bits, 1)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use rs_graph::traits::Directed;
     use rs_graph::*;
 
-    #[test]
+    /*#[test]
     fn test_new() {
         use super::*;
 
@@ -132,5 +148,31 @@ mod tests {
 
         let w_graph = WaveletTreeGraph::new();
         assert_eq!(2, w_graph.neighbor(0, 1));
+    }*/
+
+    #[test]
+    fn test_add_edge() {
+        let mut graph = WaveletTreeGraph::new(6);
+        graph.add_edge(0, 1);
+        graph.add_edge(0, 3);
+        graph.add_edge(1, 0);
+        graph.add_edge(1, 3);
+        graph.add_edge(1, 2);
+        graph.add_edge(3, 2);
+        graph.add_edge(4, 0);
+        graph.add_edge(4, 3);
+
+        assert_eq!(graph.list, vec![1, 3, 0, 3, 2, 2, 0, 3]);
+        assert_eq!(
+            graph.bit_vec,
+            vec![
+                true, false, false, true, false, false, false, true, true, false, true, false,
+                false, true
+            ]
+        );
+        assert_eq!(Some(2), graph.neighbor(1, 3));
+        assert_eq!(Some(3), graph.neighbor(1, 2));
+        assert_eq!(Some(0), graph.neighbor(1, 1));
+        assert_eq!(None, graph.neighbor(5, 1));
     }
 }
