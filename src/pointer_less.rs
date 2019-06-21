@@ -49,6 +49,26 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreeCompact<T> {
         }
     }
 
+
+    /// Returns the position of the n-th occurrence of object
+    /// Returns None if there isn't a n-th occurrence
+    ///
+    /// # Arguments
+    ///
+    /// * `object` The object to find the position of
+    /// * `n` The n-th occurrence to find, starting at 0
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use crate::fp_wavelet_trees::WaveletTree;
+    /// let w_tree = fp_wavelet_trees::pointer_less::WaveletTreeCompact::from("abcab");
+    /// assert_eq!(w_tree.select('a', 0), Some(0));
+    /// assert_eq!(w_tree.select('a', 1), Some(3));
+    /// assert_eq!(w_tree.select('c', 0), Some(2));
+    /// assert_eq!(w_tree.select('c', 1), None);
+    /// ```
+    ///
     fn select(&self, object: T, n: u64) -> Option<u64> {
         unimplemented!()
     }
