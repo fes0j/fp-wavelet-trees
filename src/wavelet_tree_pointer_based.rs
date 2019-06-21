@@ -1,9 +1,9 @@
+use crate::WaveletTree;
 use bio::data_structures::rank_select::RankSelect;
 use bv::BitVec;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use crate::WaveletTree;
 
 /// A WaveletTree with Pointers is represented here
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -12,74 +12,6 @@ pub struct WaveletTreePointer<T: PartialEq + Copy> {
     root_node: Box<WaveletTreeNode>,
     /// Only on this top level the alphabet will be saved
     alphabet: Vec<T>,
-}
-
-impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreePointer<T> {
-    /// Returns a WavletTree using pointer
-    ///
-    /// # Arguments
-    ///
-    /// * `iterator` Iterator over any objects implementing PartialEq and Copy traits
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use fp_wavelet_trees::wavelet_tree_pointer_based::WaveletTreePointer as WTP;
-    /// let wTree:WTP<char> = fp_wavelet_trees::WaveletTree::new("example".chars());
-    /// ```
-    fn new(iterator: impl Iterator<Item=T>) -> WaveletTreePointer<T> {
-        WaveletTreePointer::from_vec(iterator.collect())
-    }
-
-    fn access(&self, position: u64) -> Option<T> {
-        self.root_node.access(position, &self.alphabet[..])
-    }
-
-    /// Return position of n-th character
-    fn select(&self, object: T, n: u64) -> Option<u64> {
-        self.root_node.select(object, n, &self.alphabet[..])
-    }
-
-    fn rank(&self, object: T, n: u64) -> Option<u64> {
-        self.root_node.rank(&self.alphabet[..], object, n)
-    }
-}
-
-impl<T: PartialEq + Copy> WaveletTreePointer<T> {
-    fn from_vec(vector: Vec<T>) -> WaveletTreePointer<T> {
-        //Get distinct characters from string
-        let mut alphabet = Vec::new();
-        for v in vector.clone() {
-            if !alphabet.contains(&v) {
-                alphabet.push(v);
-            }
-        }
-
-        //edge case of an empty or single char string
-        if alphabet.len() < 2 {
-            return WaveletTreePointer {
-                root_node: {
-                    let mut bitvector = BitVec::new();
-                    bitvector.resize(vector.len() as u64, true);
-                    Box::new(WaveletTreeNode {
-                        bit_vec: RankSelect::new(bitvector, super::SUPERBLOCK_SIZE),
-                        left_child: None,
-                        right_child: None,
-                    })
-                },
-                alphabet,
-            };
-        }
-        //Create tree
-        let root_node =
-            WaveletTreeNode::new(vector, &alphabet) /* even with an empty string, there should be a node */
-                .expect("Without a tree node the WaveletTree will be useless ");
-
-        WaveletTreePointer {
-            root_node,
-            alphabet,
-        }
-    }
 }
 
 //This will be the tree structure itself, with the bit vector as data
@@ -170,43 +102,6 @@ impl WaveletTreeNode {
         }
     }
 
-    fn select<T: PartialEq + Copy>(&self, character: T, n: u64, alphabet: &[T]) -> Option<u64> {
-        //output: position of nth character
-        //split alphabet
-        let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
-        //if left alphabet contains character
-        if left_alphabet.contains(&character) {
-            if let Some(ref lc) = self.left_child {
-                //if there is a child go there
-                match lc.select(character, n, left_alphabet) {
-                    //position of the nth character in the left child
-                    //+1 because recursive step returned an index while the #of occurences is needed
-                    Some(x) => self.bit_vec.select_0(x + 1),
-                    None => None,
-                }
-            } else {
-                //there was no child, look for 0s
-                self.bit_vec.select_0(n)
-            }
-        } else if right_alphabet.contains(&character) {
-            if let Some(ref rc) = self.right_child {
-                //if there is a child go there
-                match rc.select(character, n, right_alphabet) {
-                    //position of the nth character in the left child
-                    //+1 because recursive step returned an index while the #of occurences is needed
-                    Some(x) => self.bit_vec.select_1(x + 1),
-                    None => None,
-                }
-            } else {
-                //there was no child, look for 1s
-                self.bit_vec.select_1(n)
-            }
-        } else {
-            //Character is not in alphabet
-            None
-        }
-    }
-
     /// Returns the number of occurences of a character in the sequence until position n
     pub fn rank<T: PartialEq + Copy>(&self, alphabet: &[T], object: T, n: u64) -> Option<u64> {
         //Determine in which half of the alphabet the character is
@@ -252,6 +147,111 @@ impl WaveletTreeNode {
             None
         }
     }
+
+    fn select<T: PartialEq + Copy>(&self, character: T, n: u64, alphabet: &[T]) -> Option<u64> {
+        //output: position of nth character
+        //split alphabet
+        let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
+        //if left alphabet contains character
+        if left_alphabet.contains(&character) {
+            if let Some(ref lc) = self.left_child {
+                //if there is a child go there
+                match lc.select(character, n, left_alphabet) {
+                    //position of the nth character in the left child
+                    //+1 because recursive step returned an index while the #of occurences is needed
+                    Some(x) => self.bit_vec.select_0(x + 1),
+                    None => None,
+                }
+            } else {
+                //there was no child, look for 0s
+                self.bit_vec.select_0(n)
+            }
+        } else if right_alphabet.contains(&character) {
+            if let Some(ref rc) = self.right_child {
+                //if there is a child go there
+                match rc.select(character, n, right_alphabet) {
+                    //position of the nth character in the left child
+                    //+1 because recursive step returned an index while the #of occurences is needed
+                    Some(x) => self.bit_vec.select_1(x + 1),
+                    None => None,
+                }
+            } else {
+                //there was no child, look for 1s
+                self.bit_vec.select_1(n)
+            }
+        } else {
+            //Character is not in alphabet
+            None
+        }
+    }
+}
+
+impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreePointer<T> {
+    /// Returns a WavletTree using pointer
+    ///
+    /// # Arguments
+    ///
+    /// * `iterator` Iterator over any objects implementing PartialEq and Copy traits
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use fp_wavelet_trees::wavelet_tree_pointer_based::WaveletTreePointer as WTP;
+    /// let wTree:WTP<char> = fp_wavelet_trees::WaveletTree::new("example".chars());
+    /// ```
+    fn new(iterator: impl Iterator<Item = T>) -> WaveletTreePointer<T> {
+        WaveletTreePointer::from_vec(iterator.collect())
+    }
+
+    fn access(&self, position: u64) -> Option<T> {
+        self.root_node.access(position, &self.alphabet[..])
+    }
+
+    /// Return position of n-th character
+    fn select(&self, object: T, n: u64) -> Option<u64> {
+        self.root_node.select(object, n, &self.alphabet[..])
+    }
+
+    fn rank(&self, object: T, n: u64) -> Option<u64> {
+        self.root_node.rank(&self.alphabet[..], object, n)
+    }
+}
+
+impl<T: PartialEq + Copy> WaveletTreePointer<T> {
+    fn from_vec(vector: Vec<T>) -> WaveletTreePointer<T> {
+        //Get distinct characters from string
+        let mut alphabet = Vec::new();
+        for v in vector.clone() {
+            if !alphabet.contains(&v) {
+                alphabet.push(v);
+            }
+        }
+
+        //edge case of an empty or single char string
+        if alphabet.len() < 2 {
+            return WaveletTreePointer {
+                root_node: {
+                    let mut bitvector = BitVec::new();
+                    bitvector.resize(vector.len() as u64, true);
+                    Box::new(WaveletTreeNode {
+                        bit_vec: RankSelect::new(bitvector, super::SUPERBLOCK_SIZE),
+                        left_child: None,
+                        right_child: None,
+                    })
+                },
+                alphabet,
+            };
+        }
+        //Create tree
+        let root_node =
+            WaveletTreeNode::new(vector, &alphabet) /* even with an empty string, there should be a node */
+                .expect("Without a tree node the WaveletTree will be useless ");
+
+        WaveletTreePointer {
+            root_node,
+            alphabet,
+        }
+    }
 }
 
 impl PartialEq for WaveletTreeNode {
@@ -274,13 +274,31 @@ impl fmt::Debug for WaveletTreeNode {
     }
 }
 
+impl From<String> for WaveletTreePointer<char> {
+    fn from(input: String) -> Self {
+        WaveletTreePointer::new(input.chars())
+    }
+}
+
+impl From<&str> for WaveletTreePointer<char> {
+    fn from(input: &str) -> Self {
+        WaveletTreePointer::new(input.chars())
+    }
+}
+
+impl<T: PartialEq + Copy> From<Vec<T>> for WaveletTreePointer<T> {
+    fn from(input: Vec<T>) -> Self {
+        WaveletTreePointer::from_vec(input)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::WaveletTree;
-    use unicode_segmentation::UnicodeSegmentation;
     use bv::BitVec;
     use bv::BitsMut;
+    use unicode_segmentation::UnicodeSegmentation;
 
     /// # Test with two different letters
     /// This will test for alphabet and child nodes.
