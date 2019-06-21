@@ -70,7 +70,7 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreeCompact<T> {
     /// ```
     ///
     fn select(&self, object: T, n: u64) -> Option<u64> {
-        unimplemented!()
+        self.select_intern(&self.alphabet[..], object, n, 0, self.sequence_len - 1)
     }
 
 
@@ -112,14 +112,15 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
         let mut levels: Vec<BitVec<u8>> = Vec::new();
 
         //Create bitvecs for levels
-        if alphabet.len() == 1{
+        if alphabet.len() == 1 {
             let mut local_bitvec = BitVec::new();
             input.iter().foreach(|x| {
                 local_bitvec.push(false);
             });
             levels.push(local_bitvec);
-        }else{
-        WaveletTreeCompact::create_bitvec(0, &mut levels, &input[..], &alphabet[..]);}
+        } else {
+            WaveletTreeCompact::create_bitvec(0, &mut levels, &input[..], &alphabet[..]);
+        }
 
         //Append all the levels into one big bitvec
         let mut bit_vec: BitVec<u8> = BitVec::new();
@@ -127,7 +128,7 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
             //every layer starts at a multiple of sequence length so layers in betwene must be filled up
             let filler: BitVec<u8> = match l.len() {
                 0 => BitVec::new(),
-                x => BitVec::new_fill(false, sequence_len - (x as u64))
+                x => BitVec::new_fill(false, sequence_len - (x as u64)),
             };
             bit_vec = bit_vec.bit_concat(l).to_bit_vec();
             bit_vec = bit_vec.bit_concat(filler).to_bit_vec();
@@ -178,9 +179,9 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
 
     fn rank_0(&self, l: u64, r: u64) -> Option<u64> {
         //include the start index
-        let offset=match self.bit_vec.bits()[l] {
+        let offset = match self.bit_vec.bits()[l] {
             true => Some(0),
-            false => Some(1)
+            false => Some(1),
         };
         Some(self.bit_vec.rank_0(r)? - self.bit_vec.rank_0(l)? + offset?)
     }
@@ -194,17 +195,68 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
         Some(self.bit_vec.rank_1(r)? - self.bit_vec.rank_1(l)? + offset?)
     }
 
+    fn select_0(&self, l: u64, r: u64, n: u64) -> Option<u64> {
+        //rank_0 of l-1
+        let offset = match self.bit_vec.bits()[l] {
+            true => 0,
+            false => 1,
+        };
+        let rank_lm1 = self.bit_vec.rank_0(l).unwrap() - offset;
+        //rank_lm1 0s appear before so +idex will be in the current node or right
+        let index = self.bit_vec.select_0(n + rank_lm1);
+        //only return if index remains in the node
+        match index {
+            None => None,
+            Some(i) => {
+                if i <= r && i >= l {
+                    Some(i - l)
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
+    fn select_1(&self, l: u64, r: u64, n: u64) -> Option<u64> {
+        //rank_1 of l-1
+        let offset = match self.bit_vec.bits()[l] {
+            true => 1,
+            false => 0,
+        };
+        let rank_lm1 = self.bit_vec.rank_1(l).unwrap() - offset;
+        //rank_lm1 1s appear before so +idex will be in the current node or right
+        let index = self.bit_vec.select_1(n + rank_lm1);
+        //only return if index remains in the node
+        match index {
+            None => None,
+            Some(i) => {
+                if i <= r && i >= l {
+                    Some(i - l)
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
     fn splitalphabet<'a>(alphabet: &'a [T]) -> (&[T], &[T]) {
         if alphabet.len() == 0 {
             panic!("can not split empty alphabet")
         } else if alphabet.len() == 1 {
-            (alphabet,&[])
-        }else{
+            (alphabet, &[])
+        } else {
             alphabet.split_at(2usize.pow(((alphabet.len()) as f64).log2().ceil() as u32 - 1))
         }
     }
 
-    fn rank_intern(&self, alphabet: &[T], object: T, index: u64, left: u64, right: u64) -> Option<u64> {
+    fn rank_intern(
+        &self,
+        alphabet: &[T],
+        object: T,
+        index: u64,
+        left: u64,
+        right: u64,
+    ) -> Option<u64> {
         //Split alphabet
         let (left_alphabet, right_alphabet) = WaveletTreeCompact::splitalphabet(alphabet);
         if left_alphabet.contains(&object) {
@@ -228,7 +280,7 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
                             i - 1,
                             left_child_left,
                             left_child_right,
-                        )
+                        ),
                     }
                 } else {
                     //out of bounds
@@ -240,8 +292,7 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
                 //need to account for the left most bit itselfe but can not rely on left>0
                 self.rank_1(left, left + index)
             } else {
-                if let Some(w) = self.rank_0(left, right)
-                {
+                if let Some(w) = self.rank_0(left, right) {
                     //in case there is a child,determin boundries
                     let left_child_left = left + self.sequence_len;
                     let left_child_right = left_child_left + w - 1;
@@ -257,7 +308,79 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
                             i - 1,
                             right_child_left,
                             right_child_right,
-                        )
+                        ),
+                    }
+                } else {
+                    //out of bounds
+                    panic!("rank: no child in tree");
+                }
+            }
+        } else {
+            None
+        }
+    }
+
+    fn select_intern(
+        &self,
+        alphabet: &[T],
+        object: T,
+        index: u64,
+        left: u64,
+        right: u64,
+    ) -> Option<u64> {
+        //Split alphabet
+        let (left_alphabet, right_alphabet) = WaveletTreeCompact::splitalphabet(alphabet);
+        if left_alphabet.contains(&object) {
+            if left_alphabet.len() == 1 {
+                self.select_0(left, right, index)
+            } else {
+                if let Some(w) = self.rank_0(left, right) {
+                    //in case there is a child,determin boundries
+                    let left_child_left = left + self.sequence_len;
+                    let left_child_right = left_child_left + w - 1;
+                    let right_child_left = left_child_right + 1;
+                    let right_child_right = right + self.sequence_len;
+
+                    //position of the nth character in the left child
+                    match self.select_intern(
+                        left_alphabet,
+                        object,
+                        index,
+                        left_child_left,
+                        left_child_right,
+                    ) {
+                        //+1 because recursive step returned an index while the #of occurences is needed
+                        Some(x) => self.select_0(left, right, x + 1),
+                        None => None,
+                    }
+                } else {
+                    //out of bounds
+                    panic!("rank: no child in tree");
+                }
+            }
+        } else if right_alphabet.contains(&object) {
+            if right_alphabet.len() == 1 {
+                //panic!("l{} r{} i{}",left,right,index);
+                self.select_1(left, right, index)
+            } else {
+                if let Some(w) = self.rank_0(left, right) {
+                    //in case there is a child,determin boundries
+                    let left_child_left = left + self.sequence_len;
+                    let left_child_right = left_child_left + w - 1;
+                    let right_child_left = left_child_right + 1;
+                    let right_child_right = right + self.sequence_len;
+
+                    //position of the nth character in the right child
+                    match self.select_intern(
+                        right_alphabet,
+                        object,
+                        index,
+                        right_child_left,
+                        right_child_right,
+                    ) {
+                        //+1 because recursive step returned an index while the #of occurences is needed
+                        Some(x) => self.select_1(left, right, x + 1),
+                        None => None,
                     }
                 } else {
                     //out of bounds
@@ -359,37 +482,37 @@ mod tests {
         let test_string = "abcde".chars().collect();
         let mut w_tree = WaveletTreeCompact::new(test_string);
 
-        assert_eq!(w_tree.bit_vec.bits()[0], false);//a
-        assert_eq!(w_tree.bit_vec.bits()[1], false);//b
-        assert_eq!(w_tree.bit_vec.bits()[2], false);//c
-        assert_eq!(w_tree.bit_vec.bits()[3], false);//d
-        assert_eq!(w_tree.bit_vec.bits()[4], true);//e
+        assert_eq!(w_tree.bit_vec.bits()[0], false); //a
+        assert_eq!(w_tree.bit_vec.bits()[1], false); //b
+        assert_eq!(w_tree.bit_vec.bits()[2], false); //c
+        assert_eq!(w_tree.bit_vec.bits()[3], false); //d
+        assert_eq!(w_tree.bit_vec.bits()[4], true); //e
 
-        assert_eq!(w_tree.bit_vec.bits()[5], false);//a
-        assert_eq!(w_tree.bit_vec.bits()[6], false);//b
-        assert_eq!(w_tree.bit_vec.bits()[7], true);//c
-        assert_eq!(w_tree.bit_vec.bits()[8], true);//d
-        assert_eq!(w_tree.bit_vec.bits()[9], false);//placeholder
+        assert_eq!(w_tree.bit_vec.bits()[5], false); //a
+        assert_eq!(w_tree.bit_vec.bits()[6], false); //b
+        assert_eq!(w_tree.bit_vec.bits()[7], true); //c
+        assert_eq!(w_tree.bit_vec.bits()[8], true); //d
+        assert_eq!(w_tree.bit_vec.bits()[9], false); //placeholder
 
-        assert_eq!(w_tree.bit_vec.bits()[10], false);//a
-        assert_eq!(w_tree.bit_vec.bits()[11], true);//b
-        assert_eq!(w_tree.bit_vec.bits()[12], false);//c
-        assert_eq!(w_tree.bit_vec.bits()[13], true);//d
-        assert_eq!(w_tree.bit_vec.bits()[14], false);//placeholder
+        assert_eq!(w_tree.bit_vec.bits()[10], false); //a
+        assert_eq!(w_tree.bit_vec.bits()[11], true); //b
+        assert_eq!(w_tree.bit_vec.bits()[12], false); //c
+        assert_eq!(w_tree.bit_vec.bits()[13], true); //d
+        assert_eq!(w_tree.bit_vec.bits()[14], false); //placeholder
     }
 
     #[test]
-    fn test_rank_edge_cases(){
+    fn test_rank_edge_cases() {
         let one_element = WaveletTreeCompact::new("a".chars().collect());
-        assert_eq!(one_element.rank('a', 0),Some(1));
-        assert_eq!(one_element.rank('a', 1),None);
-        assert_eq!(one_element.rank('b', 0),None);
+        assert_eq!(one_element.rank('a', 0), Some(1));
+        assert_eq!(one_element.rank('a', 1), None);
+        assert_eq!(one_element.rank('b', 0), None);
     }
 
     #[test]
     fn test_rank_select_0_1() {
         let test_string = "abcde".chars().collect();
-        let mut w_tree = WaveletTreeCompact::new(test_string);
+        let mut w_tree = WaveletTreeCompact::new(test_string); //00001 00110
 
         assert_eq!(w_tree.rank_0(0, 3), Some(4));
         assert_eq!(w_tree.rank_0(0, 4), Some(4));
@@ -398,6 +521,12 @@ mod tests {
         assert_eq!(w_tree.rank_0(3, 3), Some(1));
         assert_eq!(w_tree.rank_1(0, 3), Some(0));
         assert_eq!(w_tree.rank_1(4, 5), Some(1));
+
+        assert_eq!(w_tree.select_0(0, 3, 2), Some(1));
+        assert_eq!(w_tree.select_0(3, 5, 2), Some(2));
+        assert_eq!(w_tree.select_0(7, 8, 1), None);
+        assert_eq!(w_tree.select_1(7, 8, 1), Some(0));
+        assert_eq!(w_tree.select_1(2, 5, 3), None);
     }
 
     #[test]
@@ -509,5 +638,15 @@ mod tests {
         }
         //Test that there are no additional elements
         assert_eq!(w_tree.access(test_string.len() as u64), None);
+    }
+
+    #[test]
+    fn test_select() {
+        let test_string = "abcdeb";
+        let w_tree = WaveletTreeCompact::from(test_string); //00001 00110 01010
+
+        assert_eq!(w_tree.select('b', 1), Some(1));
+        assert_eq!(w_tree.select('b', 2), Some(5));
+        assert_eq!(w_tree.select('b', 0), None);
     }
 }
