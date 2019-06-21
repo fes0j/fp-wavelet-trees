@@ -33,7 +33,7 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreeCompact<T> {
     ///
     /// ```
     /// use crate::fp_wavelet_trees::WaveletTree;
-    /// let w_tree = fp_wavelet_trees::pointer_less::WaveletTreeCompact::from("test");
+    /// let w_tree = fp_wavelet_trees::wavelet_tree_compact::WaveletTreeCompact::from("test");
     /// assert_eq!(Some('t'), w_tree.access(0));
     /// assert_eq!(Some('e'), w_tree.access(1));
     /// assert_eq!(Some('s'), w_tree.access(2));
@@ -62,7 +62,7 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreeCompact<T> {
     ///
     /// ```
     /// use crate::fp_wavelet_trees::WaveletTree;
-    /// let w_tree = fp_wavelet_trees::pointer_less::WaveletTreeCompact::from("abcab");
+    /// let w_tree = fp_wavelet_trees::wavelet_tree_compact::WaveletTreeCompact::from("abcab");
     /// assert_eq!(w_tree.select('a', 0), Some(0));
     /// assert_eq!(w_tree.select('a', 1), Some(3));
     /// assert_eq!(w_tree.select('c', 0), Some(2));
@@ -86,7 +86,7 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreeCompact<T> {
     ///
     /// ```
     /// use crate::fp_wavelet_trees::WaveletTree;
-    /// let w_tree = fp_wavelet_trees::pointer_less::WaveletTreeCompact::from("abababababab");
+    /// let w_tree = fp_wavelet_trees::wavelet_tree_compact::WaveletTreeCompact::from("abababababab");
     /// assert_eq!(w_tree.rank('a', 11), Some(6));
     /// assert_eq!(w_tree.rank('b', 11), Some(6));
     /// assert_eq!(w_tree.rank('b', 0), Some(0));

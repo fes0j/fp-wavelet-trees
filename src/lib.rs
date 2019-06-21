@@ -8,7 +8,7 @@
 /// RankSelect can use different k for the superblocks
 const SUPERBLOCK_SIZE: usize = 1;
 
-pub mod pointer_less;
+pub mod wavelet_tree_compact;
 
 /// WaveletTrees
 pub trait WaveletTree<T> {
