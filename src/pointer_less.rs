@@ -22,6 +22,24 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreeCompact<T> {
         WaveletTreeCompact::new(vector.collect())
     }
 
+    /// Returns the element at the i-th position
+    /// Returns None if i is out of bounds
+    ///
+    /// # Arguments
+    ///
+    /// * `i` Position of the element, starting at 0
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use crate::fp_wavelet_trees::WaveletTree;
+    /// let w_tree = fp_wavelet_trees::pointer_less::WaveletTreeCompact::from("test");
+    /// assert_eq!(Some('t'), w_tree.access(0));
+    /// assert_eq!(Some('e'), w_tree.access(1));
+    /// assert_eq!(Some('s'), w_tree.access(2));
+    /// assert_eq!(Some('t'), w_tree.access(3));
+    /// assert_eq!(None, w_tree.access(4));
+    /// ```
     fn access(&self, position: u64) -> Option<T> {
         //Check if position is valid
         if position >= self.sequence_len {
