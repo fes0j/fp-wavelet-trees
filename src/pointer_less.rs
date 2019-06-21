@@ -213,7 +213,6 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
     }
 
     fn access_helper(&self, position: u64, alphabet: &[T], l: u64, r: u64) -> Option<T> {
-        //println!("A l:{}, r:{} pos:{} pos+l{}", l, r, position, position+l);
         if alphabet.len() <= 1 {
             return Some(alphabet[0]);
         }
@@ -223,16 +222,12 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
             return None;
         }
 
-        //println!("access pos:{}, alp:{:?} l:{}, r:{} vec[pos]:{} pos:{}", position, alphabet, l, r, self.bit_vec.get(l + position), l+position);
-
         assert!(l <= r);
 
         let (left_alphabet, right_alphabet) = WaveletTreeCompact::splitalphabet(alphabet);
         let pos_rank = self.rank_0(l, r)?;
         if self.bit_vec.get(l + position) {
             //Right child
-            //let child_l = self.sequence_len + l + self.rank_0(l, r).unwrap() - 1;
-            //let child_r = self.sequence_len + r;
             let child_l = self.sequence_len + pos_rank + l;
             let child_r = self.sequence_len + r;
 
@@ -240,8 +235,6 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
             self.access_helper(position - 1, right_alphabet, child_l, child_r)
         } else {
             //Left child
-            //let child_l = self.sequence_len + l;
-            //let child_r = self.sequence_len + l + self.rank_0(l, r).unwrap() - 2;
             let child_l = self.sequence_len + l;
             let child_r = child_l + pos_rank - 1;
 
@@ -414,11 +407,8 @@ mod tests {
         let test_string = "Hello world, こんにちは世界, Привет, мир";
         let w_tree = WaveletTreeCompact::from(test_string);
 
-        //println!("{:?}", w_tree);
-
         for (i, c) in test_string.chars().enumerate() {
             assert_eq!(w_tree.access(i as u64), Some(c));
-            //println!("Access: {} Expected: {} Got:{}\n\n", i, c, w_tree.access(i as u64).unwrap());
         }
     }
 
