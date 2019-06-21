@@ -19,7 +19,7 @@ pub struct WaveletTreeCompact<T: PartialEq + Copy> {
 
 impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreeCompact<T> {
     fn new(vector: impl Iterator<Item = T>) -> Self {
-        unimplemented!()
+        WaveletTreeCompact::new(vector.collect())
     }
 
     fn access(&self, position: u64) -> Option<T> {
@@ -283,19 +283,6 @@ impl From<&str> for WaveletTreeCompact<char> {
         WaveletTreeCompact::new(input.chars().collect())
     }
 }
-
-/*
-impl<T: PartialEq + Copy> From<Vec<T>> {
-
-
-
-}
-
-impl<T: PartialEq + Copy> From<Iterator<Item = T>> {
-
-
-
-}*/
 
 
 #[cfg(test)]
