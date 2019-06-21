@@ -656,4 +656,15 @@ mod tests {
         assert_eq!(w_tree.select('b', 2), Some(5));
         assert_eq!(w_tree.select('b', 0), None);
     }
+
+    #[test]
+    fn test_serialize_deserialize() {
+        let test_string = "cbacbcbcbbcabcabcabcabbca";
+        let w_tree = WaveletTreeCompact::from(test_string);
+
+        let serialized = serde_json::to_string(&w_tree).unwrap();
+        let w_tree2: WaveletTreeCompact<char> = serde_json::from_str(&serialized).unwrap();
+
+        assert_eq!(w_tree, w_tree2)
+    }
 }

@@ -1,6 +1,7 @@
 /// RankSelect can use different k for the superblocks
 const SUPERBLOCK_SIZE: usize = 1;
 
+//Submodules
 pub mod wavelet_tree_compact;
 pub mod wavelet_tree_pointer_based;
 
