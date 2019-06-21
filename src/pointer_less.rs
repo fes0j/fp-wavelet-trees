@@ -19,11 +19,16 @@ pub struct WaveletTreeCompact<T: PartialEq + Copy> {
 
 impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreeCompact<T> {
     fn new(vector: impl Iterator<Item = T>) -> Self {
-        unimplemented!()
+        WaveletTreeCompact::new(vector.collect())
     }
 
     fn access(&self, position: u64) -> Option<T> {
-        unimplemented!()
+        //Check if position is valid
+        if position >= self.sequence_len {
+            None
+        } else {
+            self.access_helper(position, &self.alphabet[..], 0, self.sequence_len - 1)
+        }
     }
 
     fn select(&self, object: T, n: u64) -> Option<u64> {
@@ -329,6 +334,44 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
             None
         }
     }
+
+    fn access_helper(&self, position: u64, alphabet: &[T], l: u64, r: u64) -> Option<T> {
+        //println!("A l:{}, r:{} pos:{} pos+l{}", l, r, position, position+l);
+        if alphabet.len() <= 1 {
+            return Some(alphabet[0]);
+        }
+
+        if l == r { //Reached end
+            //return Some(alphabet[0])
+            return None;
+        }
+
+        //println!("access pos:{}, alp:{:?} l:{}, r:{} vec[pos]:{} pos:{}", position, alphabet, l, r, self.bit_vec.get(l + position), l+position);
+
+        assert!(l <= r);
+
+        let (left_alphabet, right_alphabet) = WaveletTreeCompact::splitalphabet(alphabet);
+        let pos_rank = self.rank_0(l, r)?;
+        if self.bit_vec.get(l + position) {
+            //Right child
+            //let child_l = self.sequence_len + l + self.rank_0(l, r).unwrap() - 1;
+            //let child_r = self.sequence_len + r;
+            let child_l = self.sequence_len + pos_rank + l;
+            let child_r = self.sequence_len + r;
+
+            let mut position = self.rank_1(l, l + position)?;
+            self.access_helper(position - 1, right_alphabet, child_l, child_r)
+        } else {
+            //Left child
+            //let child_l = self.sequence_len + l;
+            //let child_r = self.sequence_len + l + self.rank_0(l, r).unwrap() - 2;
+            let child_l = self.sequence_len + l;
+            let child_r = child_l + pos_rank - 1;
+
+            let mut position = self.rank_0(l, l + position)?;
+            self.access_helper(position - 1, left_alphabet, child_l, child_r)
+        }
+    }
 }
 
 impl<T: PartialEq + Copy + Debug> Debug for WaveletTreeCompact<T> {
@@ -352,30 +395,18 @@ impl<T: PartialEq + Copy> PartialEq for WaveletTreeCompact<T> {
     }
 }
 
-/*impl From<String> for WaveletTreeCompact<char>{
+impl From<String> for WaveletTreeCompact<char>{
     fn from(input: String) -> Self {
         WaveletTreeCompact::new(input.chars().collect())
     }
-}*/
-
-/*
-impl<T: PartialEq + Copy> From<Vec<T>> {
-
-
-
 }
-
-impl<T: PartialEq + Copy> From<Iterator<Item = T>> {
-
-
-
-}*/
 
 impl From<&str> for WaveletTreeCompact<char> {
     fn from(input: &str) -> Self {
         WaveletTreeCompact::new(input.chars().collect())
     }
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -508,14 +539,49 @@ mod tests {
     }
 
     #[test]
-    fn test_access_pointer_free() {
+    fn test_access_unicode_string() {
+        let test_string = "Hello world, こんにちは世界, Привет, мир";
+        let w_tree = WaveletTreeCompact::from(test_string);
+
+        //println!("{:?}", w_tree);
+
+        for (i, c) in test_string.chars().enumerate() {
+            assert_eq!(w_tree.access(i as u64), Some(c));
+            //println!("Access: {} Expected: {} Got:{}\n\n", i, c, w_tree.access(i as u64).unwrap());
+        }
+    }
+
+    #[test]
+    fn test_access_invalid_pos(){
         let test_string = "Hello world";
         let w_tree = WaveletTreeCompact::from(test_string);
 
-        for (i, c) in test_string.chars().enumerate() {
-            //assert_eq!(w_tree.access(i as u64), Some(c));
-            println!("Access: {}", w_tree.access(i as u64).unwrap());
+        assert_eq!(w_tree.access(11), None);
+        assert_eq!(w_tree.access(100), None);
+    }
+
+    #[test]
+    fn test_access_num_vec() {
+        let test_vec: Vec<i64> = vec![1,2,3,4,5,6,7,8,9,0,10,5,3,6,3,6,2,7,4,8, -3, -6, -3, -10, -6,2,8,3,7,42,1024, 2048, 1024,3,6,8,3];
+        let w_tree = WaveletTreeCompact::new(test_vec.clone());
+
+        //Check if all elements are present
+        for (i, c) in test_vec.iter().enumerate() {
+            assert_eq!(w_tree.access(i as u64), Some(*c));
         }
+    }
+
+    #[test]
+    fn test_from_string(){
+        let test_string: String = "Test".to_string();
+        let w_tree = WaveletTreeCompact::from(test_string.clone());
+
+        //Check if all Elements are present
+        for (i, c) in test_string.chars().enumerate() {
+            assert_eq!(w_tree.access(i as u64), Some(c));
+        }
+        //Test that there are no additional elements
+        assert_eq!(w_tree.access(test_string.len() as u64), None);
     }
 
     #[test]
