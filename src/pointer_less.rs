@@ -445,6 +445,17 @@ mod tests {
     }
 
     #[test]
+    fn test_access_num_vec() {
+        let test_vec: Vec<i64> = vec![1,2,3,4,5,6,7,8,9,0,10,5,3,6,3,6,2,7,4,8, -3, -6, -3, -10, -6,2,8,3,7,42,1024, 2048, 1024,3,6,8,3];
+        let w_tree = WaveletTreeCompact::new(test_vec.clone());
+
+        //Check if all elements are present
+        for (i, c) in test_vec.iter().enumerate() {
+            assert_eq!(w_tree.access(i as u64), Some(*c));
+        }
+    }
+
+    #[test]
     fn test_from_string(){
         let test_string: String = "Test".to_string();
         let w_tree = WaveletTreeCompact::from(test_string.clone());
