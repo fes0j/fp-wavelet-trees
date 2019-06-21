@@ -394,12 +394,21 @@ mod tests {
 
     #[test]
     fn test_new_pointer_free() {
-        let w_tree = WaveletTreeCompact::from("alabar_a_la_alabarda");
+        use bv::*;
+        let w_tree = WaveletTreeCompact::from("ababababcd");
 
-        //TODO compare it to expected value
-        assert_eq!(w_tree, w_tree);
-        //TEMP just for debug purposes
-        println!("{:?}", w_tree);
+        let alphabet = vec!['a', 'b', 'c', 'd'];
+        let bit_vec = bit_vec![false, false, false, false, false, false, false, false, true, true, //First level
+            false, true, false, true, false, true, false, true, false, true //Second Level
+        ];
+        let bit_vec= RankSelect::new(bit_vec, crate::SUPERBLOCK_SIZE);
+        let w_tree_expect = WaveletTreeCompact{
+            alphabet,
+            bit_vec,
+            sequence_len: 9
+        };
+
+        assert_eq!(w_tree, w_tree_expect);
     }
 
     #[test]
