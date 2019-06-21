@@ -272,11 +272,17 @@ impl<T: PartialEq + Copy> PartialEq for WaveletTreeCompact<T> {
     }
 }
 
-/*impl From<String> for WaveletTreeCompact<char>{
+impl From<String> for WaveletTreeCompact<char>{
     fn from(input: String) -> Self {
         WaveletTreeCompact::new(input.chars().collect())
     }
-}*/
+}
+
+impl From<&str> for WaveletTreeCompact<char> {
+    fn from(input: &str) -> Self {
+        WaveletTreeCompact::new(input.chars().collect())
+    }
+}
 
 /*
 impl<T: PartialEq + Copy> From<Vec<T>> {
@@ -291,11 +297,6 @@ impl<T: PartialEq + Copy> From<Iterator<Item = T>> {
 
 }*/
 
-impl From<&str> for WaveletTreeCompact<char> {
-    fn from(input: &str) -> Self {
-        WaveletTreeCompact::new(input.chars().collect())
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -441,5 +442,18 @@ mod tests {
 
         assert_eq!(w_tree.access(11), None);
         assert_eq!(w_tree.access(100), None);
+    }
+
+    #[test]
+    fn test_from_string(){
+        let test_string: String = "Test".to_string();
+        let w_tree = WaveletTreeCompact::from(test_string.clone());
+
+        //Check if all Elements are present
+        for (i, c) in test_string.chars().enumerate() {
+            assert_eq!(w_tree.access(i as u64), Some(c));
+        }
+        //Test that there are no additional elements
+        assert_eq!(w_tree.access(test_string.len() as u64), None);
     }
 }
