@@ -8,6 +8,8 @@
 /// RankSelect can use different k for the superblocks
 const SUPERBLOCK_SIZE: usize = 1;
 
+pub mod pointer_less;
+
 /// WaveletTrees
 pub trait WaveletTree<T> {
     fn new(vector: impl Iterator<Item = T>) -> Self;
