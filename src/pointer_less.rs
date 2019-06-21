@@ -73,6 +73,25 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreeCompact<T> {
         unimplemented!()
     }
 
+
+    /// Returns the number of occurrences of object up to n
+    /// Returns None if the object doesn't occur at all
+    ///
+    /// # Arguments
+    ///
+    /// * `object` The object to find the occurrences of
+    /// * `n` The position up to which to find occurrences
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use crate::fp_wavelet_trees::WaveletTree;
+    /// let w_tree = fp_wavelet_trees::pointer_less::WaveletTreeCompact::from("abababababab");
+    /// assert_eq!(w_tree.rank('a', 11), Some(6));
+    /// assert_eq!(w_tree.rank('b', 11), Some(6));
+    /// assert_eq!(w_tree.rank('b', 0), Some(0));
+    /// assert_eq!(w_tree.rank('c', 11), None);
+    /// ```
     fn rank(&self, object: T, n: u64) -> Option<u64> {
         self.rank_intern(&self.alphabet[..], object, n, 0, self.sequence_len - 1)
     }
