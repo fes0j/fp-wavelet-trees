@@ -425,5 +425,13 @@ mod tests {
             //println!("Access: {} Expected: {} Got:{}\n\n", i, c, w_tree.access(i as u64).unwrap());
         }
     }
-    
+
+    #[test]
+    fn test_access_invalid_pos(){
+        let test_string = "Hello world";
+        let w_tree = WaveletTreeCompact::from(test_string);
+
+        assert_eq!(w_tree.access(11), None);
+        assert_eq!(w_tree.access(100), None);
+    }
 }
