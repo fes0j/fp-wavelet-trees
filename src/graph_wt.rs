@@ -10,7 +10,7 @@ pub trait GraphWithWT {
     fn new(size: usize) -> Self;
     // Adds an edge from startnode to endnode
     // does nothing (or panics?) if the WaveletTree is already created?
-    fn add_edge(&mut self, startnode: u64, endnode: u64);
+    fn add_edge(&mut self, startnode: u64, endnode: u64) -> Result<(),&'static str>;
     // Creates the bitmap and the WaveletTree from the underlying list (if not done yet)
     // returns the 'nth_neighbor' of the 'node' or None if there is None
     fn neighbor(&mut self, node: u64, nth_neighbor: u64) -> Option<u64>;
@@ -24,6 +24,7 @@ pub struct WaveletTreeGraph {
     bitmap: Option<RankSelect>,
     list: Vec<u64>,
     wavelet_tree: Option<WaveletTreePointer<u64>>,
+    size : usize,
 }
 
 impl GraphWithWT for WaveletTreeGraph {
@@ -34,12 +35,19 @@ impl GraphWithWT for WaveletTreeGraph {
             bitmap: None,
             list: vec![],
             wavelet_tree: None,
+            size: size,
         }
     }
 
-    fn add_edge(&mut self, startnode: u64, endnode: u64) {
+    fn add_edge(&mut self, startnode: u64, endnode: u64) -> Result<(), &'static str>{
         // check if wavelet_tree wasn't created already
         if self.wavelet_tree == None {
+            if self.size < (startnode + 1) as usize {
+                return Err("startnode not found in graph");
+            }
+            if self.size < (endnode + 1) as usize {
+                return Err("endnode not found in graph");
+            }
             // contains the index of the (startnode+1)-th '1' in the bit_vec
             let upper_insert_bound = select(&self.bit_vec, startnode + 1);
             if upper_insert_bound != None {
@@ -55,7 +63,9 @@ impl GraphWithWT for WaveletTreeGraph {
                 self.bit_vec.push(false);
                 self.list.push(endnode);
             }
+            return Ok(());
         }
+        Err("Graph already created, cannot further add edges")
     }
 
     fn neighbor(&mut self, node: u64, nth_neighbor: u64) -> Option<u64> {
@@ -65,6 +75,20 @@ impl GraphWithWT for WaveletTreeGraph {
         }
         let l = self.bitmap.as_mut().unwrap().select(node + 1);
         if l.is_none() {
+            return None;
+        }
+
+        let c = self.bitmap.as_mut().unwrap().select(node + 2);
+        if c.is_none() {
+            return None;
+        }
+
+        // The node 'node' has less neighbors than 'nth_neighbor'
+        if l.unwrap() >= c.unwrap() - nth_neighbor {
+            return None;
+        }
+        // The node 'node' has no neighbor
+        if self.bitmap.as_mut().unwrap().rank_1(l.unwrap() + 1) > Some(node + 1) {
             return None;
         }
         self.wavelet_tree
@@ -170,9 +194,24 @@ mod tests {
                 false, true
             ]
         );
+        assert_eq!(None, graph.neighbor(0, 3));
+        assert_eq!(Some(3), graph.neighbor(0, 2));
+        assert_eq!(Some(1), graph.neighbor(0, 1));
+
+        assert_eq!(None, graph.neighbor(1, 4));
         assert_eq!(Some(2), graph.neighbor(1, 3));
         assert_eq!(Some(3), graph.neighbor(1, 2));
         assert_eq!(Some(0), graph.neighbor(1, 1));
+
+        assert_eq!(None, graph.neighbor(2, 0));
+
+        assert_eq!(None, graph.neighbor(3, 2));
+        assert_eq!(Some(2), graph.neighbor(3, 1));
+
+        assert_eq!(None, graph.neighbor(4, 3));
+        assert_eq!(Some(3), graph.neighbor(4, 2));
+        assert_eq!(Some(0), graph.neighbor(4, 1));
+
         assert_eq!(None, graph.neighbor(5, 1));
     }
 }
