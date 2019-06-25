@@ -95,8 +95,32 @@ impl GraphWithWT for WaveletTreeGraph {
             .access(l.unwrap() + nth_neighbor - (node + 1))
     }
 
-    fn reverse_neigbor(&mut self, node: u64, nth_neighbor: u64) -> Option<u64> {
-        unimplemented!()
+    fn reverse_neigbor(&mut self, node: u64, nth_reverse_neighbor: u64) -> Option<u64> {
+        if self.wavelet_tree == None {
+            self.bitmap = Some(bool_vec_to_rankselect(&self.bit_vec));
+            self.wavelet_tree = Some(WaveletTreePointer::new(self.list.clone().into_iter()));
+        }
+        // get the index of the 'nth_reverse_neighbor' of 'node' in the adjacency list
+        let p = self
+            .wavelet_tree
+            .as_mut()
+            .unwrap()
+            .select(node, nth_reverse_neighbor);
+        if p != None {
+            // get the index of the 'nth_reverse_neighbor' in the bitmap
+            let index_in_bitmap = self.bitmap.as_mut().unwrap().select_0(p.unwrap() + 1);
+            if index_in_bitmap != None {
+                // get the startnode of the edge to the 'node' (this ist the reverse neigbor)
+                let result = self.bitmap.as_mut().unwrap().rank(index_in_bitmap.unwrap());
+                if result != None {
+                    return Some(result.unwrap() - 1);
+                }
+                return None;
+            }
+            index_in_bitmap
+        } else {
+            p
+        }
     }
 }
 
@@ -179,5 +203,32 @@ mod tests {
         assert_eq!(Some(0), graph.neighbor(4, 1));
 
         assert_eq!(None, graph.neighbor(5, 1));
+    }
+
+    #[test]
+    fn test_reverse_neighbor() {
+        let mut graph = create_sample_graph();
+
+        // Reverse neigbors of node 0
+        assert_eq!(Some(1), graph.reverse_neigbor(0, 1));
+        assert_eq!(Some(4), graph.reverse_neigbor(0, 2));
+
+        // Reverse neigbors of node 1
+        assert_eq!(Some(0), graph.reverse_neigbor(1, 1));
+
+        // Reverse neigbors of node 2
+        assert_eq!(Some(1), graph.reverse_neigbor(2, 1));
+        assert_eq!(Some(3), graph.reverse_neigbor(2, 2));
+
+        // Reverse neigbors of node 3
+        assert_eq!(Some(0), graph.reverse_neigbor(3, 1));
+        assert_eq!(Some(1), graph.reverse_neigbor(3, 2));
+        assert_eq!(Some(4), graph.reverse_neigbor(3, 3));
+
+        // Reverse neigbors of node 4
+        assert_eq!(None, graph.reverse_neigbor(4, 1));
+
+        // Reverse neigbors of node 5
+        assert_eq!(None, graph.reverse_neigbor(5, 1));
     }
 }
