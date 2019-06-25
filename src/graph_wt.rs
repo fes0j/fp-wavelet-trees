@@ -2,15 +2,13 @@ use crate::wavelet_tree_pointer_based::*;
 use crate::WaveletTree;
 use bio::data_structures::rank_select::RankSelect;
 use bv::BitVec;
-use core::borrow::Borrow;
-use rs_graph::*;
 
 pub trait GraphWithWT {
     // Creates an empty WaveletTreeGraph with 'size' nodes
     fn new(size: usize) -> Self;
     // Adds an edge from startnode to endnode
     // does nothing (or panics?) if the WaveletTree is already created?
-    fn add_edge(&mut self, startnode: u64, endnode: u64) -> Result<(),&'static str>;
+    fn add_edge(&mut self, startnode: u64, endnode: u64) -> Result<(), &'static str>;
     // Creates the bitmap and the WaveletTree from the underlying list (if not done yet)
     // returns the 'nth_neighbor' of the 'node' or None if there is None
     fn neighbor(&mut self, node: u64, nth_neighbor: u64) -> Option<u64>;
@@ -24,7 +22,7 @@ pub struct WaveletTreeGraph {
     bitmap: Option<RankSelect>,
     list: Vec<u64>,
     wavelet_tree: Option<WaveletTreePointer<u64>>,
-    size : usize,
+    size: usize,
 }
 
 impl GraphWithWT for WaveletTreeGraph {
@@ -39,7 +37,7 @@ impl GraphWithWT for WaveletTreeGraph {
         }
     }
 
-    fn add_edge(&mut self, startnode: u64, endnode: u64) -> Result<(), &'static str>{
+    fn add_edge(&mut self, startnode: u64, endnode: u64) -> Result<(), &'static str> {
         // check if wavelet_tree wasn't created already
         if self.wavelet_tree == None {
             if self.size < (startnode + 1) as usize {
@@ -130,61 +128,23 @@ fn bool_vec_to_rankselect(bit_vec: &Vec<bool>) -> RankSelect {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rs_graph::traits::Directed;
-    use rs_graph::*;
 
-    /*#[test]
-    fn test_new() {
-        use super::*;
-
-        // fill example graph with directional edges
-        let mut g = LinkedListGraph::<u32>::default();
-        let nodes = g.add_nodes(6);
-        g.add_edge(nodes[0], nodes[1]);
-        g.add_edge(nodes[0], nodes[3]);
-        g.add_edge(nodes[1], nodes[0]);
-        g.add_edge(nodes[1], nodes[2]);
-        g.add_edge(nodes[1], nodes[3]);
-        g.add_edge(nodes[3], nodes[2]);
-        g.add_edge(nodes[4], nodes[0]);
-        g.add_edge(nodes[4], nodes[3]);
-
-        //example use of outgoing edges
-        g.outedges(nodes[0]).for_each(|(_e, n)| println!("{:?}", n));
-
-        g.add_edge(nodes[3], nodes[2]);
+    fn create_sample_graph() -> WaveletTreeGraph {
+        let mut graph = WaveletTreeGraph::new(6);
+        graph.add_edge(0, 1).expect("Could not add edge to graph");
+        graph.add_edge(0, 3).expect("Could not add edge to graph");
+        graph.add_edge(1, 0).expect("Could not add edge to graph");
+        graph.add_edge(1, 3).expect("Could not add edge to graph");
+        graph.add_edge(1, 2).expect("Could not add edge to graph");
+        graph.add_edge(3, 2).expect("Could not add edge to graph");
+        graph.add_edge(4, 0).expect("Could not add edge to graph");
+        graph.add_edge(4, 3).expect("Could not add edge to graph");
+        graph
     }
-
-    /// Test if the wavelet-tree graph presents all correct neighbors
-    #[test]
-    fn test_neighbors() {
-        // fill example graph with directional edges
-        let mut g = LinkedListGraph::<u64>::default();
-        let nodes = g.add_nodes(6);
-        g.add_edge(nodes[0], nodes[1]);
-        g.add_edge(nodes[0], nodes[3]);
-        g.add_edge(nodes[1], nodes[0]);
-        g.add_edge(nodes[1], nodes[2]);
-        g.add_edge(nodes[1], nodes[3]);
-        g.add_edge(nodes[3], nodes[2]);
-        g.add_edge(nodes[4], nodes[0]);
-        g.add_edge(nodes[4], nodes[3]);
-
-        let w_graph = WaveletTreeGraph::new();
-        assert_eq!(2, w_graph.neighbor(0, 1));
-    }*/
 
     #[test]
     fn test_add_edge() {
-        let mut graph = WaveletTreeGraph::new(6);
-        graph.add_edge(0, 1);
-        graph.add_edge(0, 3);
-        graph.add_edge(1, 0);
-        graph.add_edge(1, 3);
-        graph.add_edge(1, 2);
-        graph.add_edge(3, 2);
-        graph.add_edge(4, 0);
-        graph.add_edge(4, 3);
+        let graph = create_sample_graph();
 
         assert_eq!(graph.list, vec![1, 3, 0, 3, 2, 2, 0, 3]);
         assert_eq!(
@@ -194,6 +154,12 @@ mod tests {
                 false, true
             ]
         );
+    }
+
+    #[test]
+    fn test_neighbor() {
+        let mut graph = create_sample_graph();
+
         assert_eq!(None, graph.neighbor(0, 3));
         assert_eq!(Some(3), graph.neighbor(0, 2));
         assert_eq!(Some(1), graph.neighbor(0, 1));
