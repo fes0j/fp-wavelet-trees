@@ -167,15 +167,11 @@ impl GraphWithWT for WaveletTreeGraph {
         if p != None {
             // get the index of the 'nth_reverse_neighbor' in the bitmap
             let index_in_bitmap = self.bitmap.as_mut().unwrap().select_0(p.unwrap() + 1);
-            if index_in_bitmap != None {
-                // get the startnode of the edge to the 'node' (this ist the reverse neigbor)
-                let result = self.bitmap.as_mut().unwrap().rank(index_in_bitmap.unwrap());
-                if result != None {
-                    return Some(result.unwrap() - 1);
-                }
-                return None;
-            }
-            index_in_bitmap
+
+            // get the startnode of the edge to the 'node' (this ist the reverse neigbor)
+            let result = self.bitmap.as_mut().unwrap().rank(index_in_bitmap.unwrap());
+            return Some(result.unwrap() - 1);
+
         } else {
             p
         }
@@ -262,6 +258,18 @@ mod tests {
                 false, true
             ]
         );
+
+        let mut graph = fill_wt_builder();
+        graph.add_edge(5, 0).expect("Could not add edge to graph");
+
+        assert_eq!(graph.list, vec![1, 3, 0, 3, 2, 2, 0, 3, 0]);
+        assert_eq!(
+            graph.bit_vec,
+            vec![
+                true, false, false, true, false, false, false, true, true, false, true, false,
+                false, true, false
+            ]
+        );
     }
 
     #[test]
@@ -313,10 +321,10 @@ mod tests {
         assert_eq!(Some(4), graph.reverse_neigbor(3, 3));
         assert_eq!(None, graph.reverse_neigbor(3, 4));
 
-        // Reverse neigbors of node 4
+        // Reverse neigbor of node 4
         assert_eq!(None, graph.reverse_neigbor(4, 1));
 
-        // Reverse neigbors of node 5
+        // Reverse neigbor of node 5
         assert_eq!(None, graph.reverse_neigbor(5, 1));
     }
 
@@ -327,5 +335,11 @@ mod tests {
        assert!( w_builder.add_edge(1, 4).is_err(), "This edge should not be allowed");
        assert!( w_builder.add_edge(4, 1).is_err(), "This edge should not be allowed");
 
+    }
+
+    #[test]
+    fn test_helperfn_select() {
+        let bit_vec = vec![false; 1];
+        assert_eq!(select(&bit_vec, 1), None);
     }
 }
