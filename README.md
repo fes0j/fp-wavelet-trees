@@ -1,6 +1,7 @@
 # fp-wavelet-trees
 A small student project with tasks by Johannes Köster.
 
+Documentation available at [GitHub Pages](https://fes0j.github.io/fp-wavelet-trees/fp_wavelet_trees/index.html).
 
 
 ## TODOs
