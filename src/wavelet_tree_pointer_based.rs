@@ -188,15 +188,70 @@ impl WaveletTreeNode {
 }
 
 impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreePointer<T> {
+    /// Returns the element at the index i
+    /// Returns None if i is out of bounds
+    ///
+    /// # Arguments
+    ///
+    /// * `i` Index of the element, starting at 0
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use crate::fp_wavelet_trees::WaveletTree;
+    /// let w_tree = fp_wavelet_trees::wavelet_tree_pointer_based::WaveletTreePointer::from("test");
+    /// assert_eq!(Some('t'), w_tree.access(0));
+    /// assert_eq!(Some('e'), w_tree.access(1));
+    /// assert_eq!(Some('s'), w_tree.access(2));
+    /// assert_eq!(Some('t'), w_tree.access(3));
+    /// assert_eq!(None, w_tree.access(4));
+    /// ```
     fn access(&self, position: u64) -> Option<T> {
         self.root_node.access(position, &self.alphabet[..])
     }
 
-    /// Return position of n-th character
+    /// Returns the number of occurrences of object up to index n
+    /// Returns None if the object doesn't occur at all or n is larger than the length of the content
+    ///
+    /// # Arguments
+    ///
+    /// * `object` The object to find the occurrences of
+    /// * `n` The index up to which to find occurrences, starting at 0
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use crate::fp_wavelet_trees::WaveletTree;
+    /// let w_tree = fp_wavelet_trees::wavelet_tree_pointer_based::WaveletTreePointer::from("abababababab");
+    /// assert_eq!(w_tree.rank('a', 11), Some(6));
+    /// assert_eq!(w_tree.rank('b', 11), Some(6));
+    /// assert_eq!(w_tree.rank('b', 0), Some(0));
+    /// assert_eq!(w_tree.rank('c', 11), None);
+    /// ```
     fn select(&self, object: T, n: u64) -> Option<u64> {
         self.root_node.select(object, n, &self.alphabet[..])
     }
 
+    /// Returns the position of the n-th occurrence of object
+    /// Returns None if there isn't a n-th occurrence
+    ///
+    /// # Arguments
+    ///
+    /// * `object` The object to find the position of
+    /// * `n` The n-th occurrence to find, starting at 1
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use crate::fp_wavelet_trees::WaveletTree;
+    /// let w_tree = fp_wavelet_trees::wavelet_tree_pointer_based::WaveletTreePointer::from("abcab");
+    /// assert_eq!(w_tree.select('a', 0), None);
+    /// assert_eq!(w_tree.select('a', 1), Some(0));
+    /// assert_eq!(w_tree.select('a', 2), Some(3));
+    /// assert_eq!(w_tree.select('c', 1), Some(2));
+    /// assert_eq!(w_tree.select('c', 2), None);
+    /// ```
+    ///
     fn rank(&self, object: T, n: u64) -> Option<u64> {
         self.root_node.rank(&self.alphabet[..], object, n)
     }
@@ -213,7 +268,7 @@ impl<T: PartialEq + Copy> WaveletTreePointer<T> {
     ///
     /// ```
     /// use fp_wavelet_trees::wavelet_tree_pointer_based::WaveletTreePointer as WTP;
-    /// let wTree:WTP<char> = WTP::new("example".chars().collect());
+    /// let wTree:WTP<u32> = WTP::new(vec![1,2,3]);
     /// ```
     pub fn new(vector: Vec<T>) -> WaveletTreePointer<T> {
         //Get distinct objects from vec

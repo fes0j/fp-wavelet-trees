@@ -17,6 +17,18 @@ pub struct WaveletTreeCompact<T: PartialEq + Copy> {
 }
 
 impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
+    /// Returns a pointerless WavletTree
+    ///
+    /// # Arguments
+    ///
+    /// * `vector` Vec of any objects implementing PartialEq and Copy traits
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use fp_wavelet_trees::wavelet_tree_compact::WaveletTreeCompact as WTC;
+    /// let wTree:WTC<u32> = WTC::new(vec![1,2,3]);
+    /// ```
     pub fn new(input: Vec<T>) -> WaveletTreeCompact<T> {
         let sequence_len = input.len() as u64;
         //Create alphabet
@@ -344,24 +356,13 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
     }
 }
 
-impl<T: PartialEq + Copy + Debug> Debug for WaveletTreeCompact<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "WaveletTreeCompact {{ alphabet:{:?} bv:{:?}}}",
-            self.alphabet,
-            self.bit_vec.bits()
-        )
-    }
-}
-
 impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreeCompact<T> {
-    /// Returns the element at the i-th position
+    /// Returns the element at the index i
     /// Returns None if i is out of bounds
     ///
     /// # Arguments
     ///
-    /// * `i` Position of the element, starting at 0
+    /// * `i` Index of the element, starting at 0
     ///
     /// # Example
     ///
@@ -389,7 +390,7 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreeCompact<T> {
     /// # Arguments
     ///
     /// * `object` The object to find the occurrences of
-    /// * `n` The index up to which to find occurrences
+    /// * `n` The index up to which to find occurrences, starting at 0
     ///
     /// # Example
     ///
@@ -406,13 +407,13 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreeCompact<T> {
         self.rank_helper(&self.alphabet[..], object, n, 0, self.sequence_len - 1)
     }
 
-    /// Returns the position of the n-th occurrence (starting with 1) of object
+    /// Returns the position of the n-th occurrence of object
     /// Returns None if there isn't a n-th occurrence
     ///
     /// # Arguments
     ///
     /// * `object` The object to find the position of
-    /// * `n` The n-th occurrence to find, starting at 0
+    /// * `n` The n-th occurrence to find, starting at 1
     ///
     /// # Example
     ///
@@ -429,6 +430,17 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreeCompact<T> {
     fn select(&self, object: T, n: u64) -> Option<u64> {
         if self.sequence_len == 0 {return None;}
         self.select_helper(&self.alphabet[..], object, n, 0, self.sequence_len - 1)
+    }
+}
+
+impl<T: PartialEq + Copy + Debug> Debug for WaveletTreeCompact<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "WaveletTreeCompact {{ alphabet:{:?} bv:{:?}}}",
+            self.alphabet,
+            self.bit_vec.bits()
+        )
     }
 }
 
