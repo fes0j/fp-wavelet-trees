@@ -1,4 +1,4 @@
-# fp-wavelet-trees [![Build Status](https://travis-ci.com/fes0j/fp-wavelet-trees.svg?branch=master)](https://travis-ci.org/fes0j/fp-wavelet-trees)
+# fp-wavelet-trees [![Build Status](https://travis-ci.com/fes0j/fp-wavelet-trees.svg?branch=master)](https://travis-ci.com/fes0j/fp-wavelet-trees)
 
 A small student project with tasks by Johannes Köster.
 
