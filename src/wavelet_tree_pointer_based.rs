@@ -2,9 +2,9 @@ use crate::WaveletTree;
 use bio::data_structures::rank_select::RankSelect;
 use bv::BitVec;
 use itertools::Itertools;
-use std::iter::FromIterator;
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::iter::FromIterator;
 
 /// A WaveletTree with Pointers is represented here
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -312,6 +312,47 @@ impl PartialEq for WaveletTreeNode {
     }
 }
 
+impl PartialEq<&str> for WaveletTreePointer<char> {
+    fn eq(&self, other: &&str) -> bool {
+        if self.root_node.bit_vec.bits().len() as usize == other.chars().count() {
+            for (i, c) in other.chars().enumerate() {
+                match self.access(i as u64) {
+                    None => return false,
+                    Some(c2) => {
+                        if c2 != c {
+                            return false;
+                        }
+                    }
+                }
+            }
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl<T: PartialEq + Copy> PartialEq<Vec<T>> for WaveletTreePointer<T> {
+    fn eq(&self, other: &Vec<T>) -> bool {
+        if self.root_node.bit_vec.bits().len() as usize == other.len() {
+            for (i, c) in other.iter().enumerate() {
+                match self.access(i as u64) {
+                    None => return false,
+                    Some(c2) => {
+                        if *c != c2 {
+                            return false;
+                        }
+                    }
+                }
+            }
+            true
+        } else {
+            false
+        }
+    }
+}
+
+
 impl fmt::Debug for WaveletTreeNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
@@ -343,7 +384,7 @@ impl<T: PartialEq + Copy> From<Vec<T>> for WaveletTreePointer<T> {
 }
 
 impl<T: PartialEq + Copy> FromIterator<T> for WaveletTreePointer<T> {
-    fn from_iter<I: IntoIterator<Item=T>>(input: I) -> Self {
+    fn from_iter<I: IntoIterator<Item = T>>(input: I) -> Self {
         WaveletTreePointer::new(input.into_iter().collect())
     }
 }
@@ -362,7 +403,7 @@ mod tests {
     ///
     #[test]
     fn test_2_letter_tree() {
-        let two_tree: WaveletTreePointer<char> = WaveletTreePointer::from("ab");//("ab".chars());
+        let two_tree: WaveletTreePointer<char> = WaveletTreePointer::from("ab"); //("ab".chars());
         let alphabet: Vec<char> = "ab".chars().collect();
 
         assert_eq!(two_tree.alphabet, alphabet);
@@ -598,23 +639,54 @@ mod tests {
     }
 
     #[test]
-    fn test_fail_management(){
+    fn test_fail_management() {
         //test with empty content
         let a = WaveletTreePointer::from("");
-        assert_eq!(a.access(0),None);
-        assert_eq!(a.rank('a', 0),None);
-        assert_eq!(a.select('a', 0),None);
+        assert_eq!(a.access(0), None);
+        assert_eq!(a.rank('a', 0), None);
+        assert_eq!(a.select('a', 0), None);
         //out of index wil yield None
         let b = WaveletTreePointer::from("abc");
-        assert_eq!(b.access(4),None);
-        assert_eq!(b.rank('b', 4),None);
-        assert_eq!(b.select('b', 2),None);
+        assert_eq!(b.access(4), None);
+        assert_eq!(b.rank('b', 4), None);
+        assert_eq!(b.select('b', 2), None);
         //out of alphabet char will yield None
-        assert_eq!(b.rank('d',1), None);
-        assert_eq!(b.select('d',1), None);
+        assert_eq!(b.rank('d', 1), None);
+        assert_eq!(b.select('d', 1), None);
         //select of 0th will be None
-        assert_eq!(b.select('a', 0),None);
+        assert_eq!(b.select('a', 0), None);
         //rank can be Some(0)
-        assert_eq!(b.rank('c',1),Some(0));
+        assert_eq!(b.rank('c', 1), Some(0));
+    }
+
+    #[test]
+    fn test_partialeq_str() {
+        let test_string = "Hello world, こんにちは世界, Привет, мир";
+        let w_tree: WaveletTreePointer<char> = test_string.into();
+
+        //Test if string is equal to tree sequence
+        assert!(w_tree == test_string);
+
+        //Test if it returns false for a string that is not equal
+        let test_string_wrong = "Hello worlt, こんにちは世界, Привет, мир";
+        assert!(w_tree != test_string_wrong);
+
+        //Test if it returns false for a string that is shorter (and thus also inequal)
+        let test_string_shorter = "Hello world";
+        assert!(w_tree != test_string_shorter);
+    }
+
+    #[test]
+    fn test_partialeq_vec() {
+        let vec = vec![1, 2, 3, 4, 5, 1, 2, 4, 1, 3, 5, 2, 4];
+        let w_tree: WaveletTreePointer<i32> = vec.clone().into();
+
+        assert!(w_tree == vec);
+
+        let vec_wrong = vec![1, 2, 3, 4, 5, 1, 2, 4, 1, 3, 7, 2, 4];
+        assert!(w_tree != vec_wrong);
+
+        let vec_short = vec![1, 2, 3, 4, 5];
+        assert!(w_tree != vec_short);
     }
 }

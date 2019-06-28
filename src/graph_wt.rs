@@ -39,7 +39,11 @@ impl WTGraphBuilder {
     /// # let mut wt_graph_builder = WTGraphBuilder::with_capacities(2);
     /// wt_graph_builder.add_edge(0, 1);
     /// ```
-    pub fn add_edge<'a>(&'a mut self, start_node: u64, end_node: u64) -> Result<&'a mut WTGraphBuilder, &'static str> {
+    pub fn add_edge<'a>(
+        &'a mut self,
+        start_node: u64,
+        end_node: u64,
+    ) -> Result<&'a mut WTGraphBuilder, &'static str> {
         if self.size <= start_node as usize {
             return Err("start_node not found in graph");
         }
@@ -140,7 +144,6 @@ impl GraphWithWT for WaveletTreeGraph {
             .access(l.unwrap() + nth_neighbor - (node + 1))
     }
 
-
     /// Returns the nth-reverse-neigbor of a node in a graph stored in a WaveletTree
     ///
     /// # Arguments
@@ -217,19 +220,33 @@ mod tests {
         w_builder.to_graph()
     }
 
-
     fn fill_wt_builder() -> WTGraphBuilder {
         let mut w_builder = WTGraphBuilder::with_capacities(6);
 
-
-        w_builder.add_edge(0, 1).expect("Could not add edge to graph");
-        w_builder.add_edge(0, 3).expect("Could not add edge to graph");
-        w_builder.add_edge(1, 0).expect("Could not add edge to graph");
-        w_builder.add_edge(1, 3).expect("Could not add edge to graph");
-        w_builder.add_edge(1, 2).expect("Could not add edge to graph");
-        w_builder.add_edge(3, 2).expect("Could not add edge to graph");
-        w_builder.add_edge(4, 0).expect("Could not add edge to graph");
-        w_builder.add_edge(4, 3).expect("Could not add edge to graph");
+        w_builder
+            .add_edge(0, 1)
+            .expect("Could not add edge to graph");
+        w_builder
+            .add_edge(0, 3)
+            .expect("Could not add edge to graph");
+        w_builder
+            .add_edge(1, 0)
+            .expect("Could not add edge to graph");
+        w_builder
+            .add_edge(1, 3)
+            .expect("Could not add edge to graph");
+        w_builder
+            .add_edge(1, 2)
+            .expect("Could not add edge to graph");
+        w_builder
+            .add_edge(3, 2)
+            .expect("Could not add edge to graph");
+        w_builder
+            .add_edge(4, 0)
+            .expect("Could not add edge to graph");
+        w_builder
+            .add_edge(4, 3)
+            .expect("Could not add edge to graph");
 
         w_builder
     }

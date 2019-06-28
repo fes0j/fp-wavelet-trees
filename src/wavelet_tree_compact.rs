@@ -2,9 +2,9 @@ use bio::data_structures::rank_select::RankSelect;
 use bv::BitVec;
 use bv::Bits;
 use bv::BitsExt;
-use std::iter::FromIterator;
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::iter::FromIterator;
 
 use crate::WaveletTree;
 use std::fmt::Debug;
@@ -17,7 +17,6 @@ pub struct WaveletTreeCompact<T: PartialEq + Copy> {
 }
 
 impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
-
     /// Creates a new pointer-less WaveletTree on the sequence input
     ///
     /// # Arguments
@@ -114,14 +113,22 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
     /// Binary rank_0 on [l,r]
     fn rank_0(&self, l: u64, r: u64) -> Option<u64> {
         //include the start index
-        let offset = if self.bit_vec.bits()[l] { Some(0) } else { Some(1) };
+        let offset = if self.bit_vec.bits()[l] {
+            Some(0)
+        } else {
+            Some(1)
+        };
         Some(self.bit_vec.rank_0(r)? - self.bit_vec.rank_0(l)? + offset?)
     }
 
     /// Binary rank_1 on [l,r]
     fn rank_1(&self, l: u64, r: u64) -> Option<u64> {
         //include the start index
-        let offset = if self.bit_vec.bits()[l] { Some(1) } else { Some(0)};
+        let offset = if self.bit_vec.bits()[l] {
+            Some(1)
+        } else {
+            Some(0)
+        };
         Some(self.bit_vec.rank_1(r)? - self.bit_vec.rank_1(l)? + offset?)
     }
 
@@ -398,7 +405,9 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreeCompact<T> {
     /// assert_eq!(w_tree.rank('c', 11), None);
     /// ```
     fn rank(&self, object: T, n: u64) -> Option<u64> {
-        if n >= self.sequence_len {return None;}
+        if n >= self.sequence_len {
+            return None;
+        }
         self.rank_helper(&self.alphabet[..], object, n, 0, self.sequence_len - 1)
     }
 
@@ -423,7 +432,9 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreeCompact<T> {
     /// ```
     ///
     fn select(&self, object: T, n: u64) -> Option<u64> {
-        if self.sequence_len == 0 {return None;}
+        if self.sequence_len == 0 {
+            return None;
+        }
         self.select_helper(&self.alphabet[..], object, n, 0, self.sequence_len - 1)
     }
 }
@@ -445,14 +456,17 @@ impl<T: PartialEq + Copy> PartialEq for WaveletTreeCompact<T> {
     }
 }
 
-
 impl PartialEq<&str> for WaveletTreeCompact<char> {
     fn eq(&self, other: &&str) -> bool {
         if self.sequence_len as usize == other.chars().count() {
             for (i, c) in other.chars().enumerate() {
                 match self.access(i as u64) {
                     None => return false,
-                    Some(c2) => if c2 != c {return false},
+                    Some(c2) => {
+                        if c2 != c {
+                            return false;
+                        }
+                    }
                 }
             }
             true
@@ -462,13 +476,17 @@ impl PartialEq<&str> for WaveletTreeCompact<char> {
     }
 }
 
-impl<T: PartialEq + Copy> PartialEq<Vec<T>> for WaveletTreeCompact<T>{
+impl<T: PartialEq + Copy> PartialEq<Vec<T>> for WaveletTreeCompact<T> {
     fn eq(&self, other: &Vec<T>) -> bool {
         if self.sequence_len as usize == other.len() {
             for (i, c) in other.iter().enumerate() {
                 match self.access(i as u64) {
                     None => return false,
-                    Some(c2) => if *c != c2 { return false},
+                    Some(c2) => {
+                        if *c != c2 {
+                            return false;
+                        }
+                    }
                 }
             }
             true
@@ -480,7 +498,7 @@ impl<T: PartialEq + Copy> PartialEq<Vec<T>> for WaveletTreeCompact<T>{
 
 pub struct TreeIteratorCompact<T: PartialEq + Copy> {
     index: usize,
-    tree:  WaveletTreeCompact<T>,
+    tree: WaveletTreeCompact<T>,
 }
 
 impl<T: PartialEq + Copy> Iterator for TreeIteratorCompact<T> {
@@ -523,7 +541,7 @@ impl<T: PartialEq + Copy> From<Vec<T>> for WaveletTreeCompact<T> {
 }
 
 impl<T: PartialEq + Copy> FromIterator<T> for WaveletTreeCompact<T> {
-    fn from_iter<I: IntoIterator<Item=T>>(input: I) -> Self {
+    fn from_iter<I: IntoIterator<Item = T>>(input: I) -> Self {
         WaveletTreeCompact::new(input.into_iter().collect())
     }
 }
@@ -736,24 +754,24 @@ mod tests {
     }
 
     #[test]
-    fn test_fail_management(){
+    fn test_fail_management() {
         //test with empty content
         let a = WaveletTreeCompact::from("");
-        assert_eq!(a.access(0),None);
-        assert_eq!(a.rank('a', 0),None);
-        assert_eq!(a.select('a', 0),None);
+        assert_eq!(a.access(0), None);
+        assert_eq!(a.rank('a', 0), None);
+        assert_eq!(a.select('a', 0), None);
         //out of index wil yield None
         let b = WaveletTreeCompact::from("abc");
-        assert_eq!(b.access(4),None);
-        assert_eq!(b.rank('b', 4),None);
-        assert_eq!(b.select('b', 2),None);
+        assert_eq!(b.access(4), None);
+        assert_eq!(b.rank('b', 4), None);
+        assert_eq!(b.select('b', 2), None);
         //out of alphabet char will yield None
-        assert_eq!(b.rank('d',1), None);
-        assert_eq!(b.select('d',1), None);
+        assert_eq!(b.rank('d', 1), None);
+        assert_eq!(b.select('d', 1), None);
         //select of 0th will be None
-        assert_eq!(b.select('a', 0),None);
+        assert_eq!(b.select('a', 0), None);
         //rank can be Some(0)
-        assert_eq!(b.rank('c',1),Some(0));
+        assert_eq!(b.rank('c', 1), Some(0));
     }
 
     #[test]
@@ -775,15 +793,15 @@ mod tests {
 
     #[test]
     fn test_partialeq_vec() {
-        let vec = vec![1,2,3,4,5,1,2,4,1,3,5,2,4];
+        let vec = vec![1, 2, 3, 4, 5, 1, 2, 4, 1, 3, 5, 2, 4];
         let w_tree: WaveletTreeCompact<i32> = vec.clone().into();
 
         assert!(w_tree == vec);
 
-        let vec_wrong = vec![1,2,3,4,5,1,2,4,1,3,7,2,4];
+        let vec_wrong = vec![1, 2, 3, 4, 5, 1, 2, 4, 1, 3, 7, 2, 4];
         assert!(w_tree != vec_wrong);
 
-        let vec_short = vec![1,2,3,4,5];
+        let vec_short = vec![1, 2, 3, 4, 5];
         assert!(w_tree != vec_short);
     }
 
