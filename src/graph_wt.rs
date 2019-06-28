@@ -44,11 +44,8 @@ impl WTGraphBuilder {
         start_node: u64,
         end_node: u64,
     ) -> Result<&'a mut WTGraphBuilder, &'static str> {
-        if self.size <= start_node as usize {
+        if self.size <= start_node as usize || self.size <= end_node as usize {
             return Err("start_node not found in graph");
-        }
-        if self.size <= end_node as usize {
-            return Err("end_node not found in graph");
         }
         // contains the index of the (start_node+1)-th '1' in the bit_vec
         let upper_insert_bound = select(&self.bit_vec, start_node + 1);
@@ -185,6 +182,7 @@ impl GraphWithWT for WaveletTreeGraph {
     }
 }
 
+//helper methods
 fn select(bit_vec: &Vec<bool>, n: u64) -> Option<u64> {
     let mut i = 0;
     let mut counter = 0;
@@ -201,6 +199,7 @@ fn select(bit_vec: &Vec<bool>, n: u64) -> Option<u64> {
         i += 1;
     }
 }
+
 
 fn bool_vec_to_rankselect(bit_vec: &Vec<bool>) -> RankSelect {
     let mut bits: BitVec<u8> = BitVec::new();
@@ -319,5 +318,14 @@ mod tests {
 
         // Reverse neigbors of node 5
         assert_eq!(None, graph.reverse_neigbor(5, 1));
+    }
+
+    #[test]
+    fn test_wrong_edge() {
+        let mut w_builder = WTGraphBuilder::with_capacities(2);
+
+       assert!( w_builder.add_edge(1, 4).is_err(), "This edge should not be allowed");
+       assert!( w_builder.add_edge(4, 1).is_err(), "This edge should not be allowed");
+
     }
 }
