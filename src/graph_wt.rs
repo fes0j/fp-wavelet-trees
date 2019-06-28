@@ -52,7 +52,7 @@ impl WTGraphBuilder {
 
     fn to_graph(&self) -> WaveletTreeGraph {
         let bitmap = Some(bool_vec_to_rankselect(&self.bit_vec));
-        let wavelet_tree = Some(WaveletTreePointer::new(self.list.clone().into_iter()));
+        let wavelet_tree = Some(WaveletTreePointer::new(self.list.clone()));
 
         WaveletTreeGraph {
             bitmap,

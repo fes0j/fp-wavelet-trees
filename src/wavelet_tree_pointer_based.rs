@@ -215,7 +215,7 @@ impl<T: PartialEq + Copy> WaveletTreePointer<T> {
     /// use fp_wavelet_trees::wavelet_tree_pointer_based::WaveletTreePointer as WTP;
     /// let wTree:WTP<char> = fp_wavelet_trees::WaveletTree::new("example".chars().collect());
     /// ```
-    fn new(vector: Vec<T>) -> WaveletTreePointer<T> {
+    pub fn new(vector: Vec<T>) -> WaveletTreePointer<T> {
         //Get distinct objects from vec
         let mut alphabet = Vec::new();
         for v in vector.clone() {
