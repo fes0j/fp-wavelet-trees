@@ -1,7 +1,6 @@
 use crate::WaveletTree;
 use bio::data_structures::rank_select::RankSelect;
 use bv::BitVec;
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::iter::FromIterator;
@@ -449,6 +448,7 @@ mod tests {
     ///
     #[test]
     fn test_5_letter_tree() {
+        use itertools::Itertools;
         let input_string = "abcda";
         let five_tree: WaveletTreePointer<char> = WaveletTreePointer::from(input_string);
         let alphabet: Vec<char> = input_string.chars().unique().collect();
