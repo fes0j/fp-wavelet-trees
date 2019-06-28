@@ -17,6 +17,19 @@ pub struct WaveletTreeCompact<T: PartialEq + Copy> {
 }
 
 impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
+
+    /// Creates a new pointer-less WaveletTree on the sequence input
+    ///
+    /// # Arguments
+    ///
+    /// * `input` Sequence to build a WaveletTree for
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let input = vec![1, 2, 3, 4, 3, 1, 2, 4];
+    /// let w_tree = fp_wavelet_trees::wavelet_tree_compact::WaveletTreeCompact::new(input);
+    /// ```
     pub fn new(input: Vec<T>) -> WaveletTreeCompact<T> {
         let sequence_len = input.len() as u64;
         //Create alphabet
@@ -61,6 +74,8 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
         }
     }
 
+    /// Helper function for WaveletTreeCompact::new
+    /// Creates the bitvecs of the tree.
     fn create_bitvec(level: usize, levels: &mut Vec<BitVec<u8>>, sequence: &[T], alphabet: &[T]) {
         if alphabet.len() >= 2 {
             //Split alphabet
@@ -96,18 +111,21 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
         }
     }
 
+    /// Binary rank_0 on [l,r]
     fn rank_0(&self, l: u64, r: u64) -> Option<u64> {
         //include the start index
         let offset = if self.bit_vec.bits()[l] { Some(0) } else { Some(1) };
         Some(self.bit_vec.rank_0(r)? - self.bit_vec.rank_0(l)? + offset?)
     }
 
+    /// Binary rank_1 on [l,r]
     fn rank_1(&self, l: u64, r: u64) -> Option<u64> {
         //include the start index
         let offset = if self.bit_vec.bits()[l] { Some(1) } else { Some(0)};
         Some(self.bit_vec.rank_1(r)? - self.bit_vec.rank_1(l)? + offset?)
     }
 
+    /// Binary select_0 on [l,r]
     fn select_0(&self, l: u64, r: u64, n: u64) -> Option<u64> {
         //rank_0 of l-1
         let offset = if self.bit_vec.bits()[l] { 0 } else { 1 };
@@ -127,6 +145,7 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
         }
     }
 
+    /// Binary select_1 on [l,r]
     fn select_1(&self, l: u64, r: u64, n: u64) -> Option<u64> {
         //rank_1 of l-1
         let offset = if self.bit_vec.bits()[l] { 1 } else { 0 };
@@ -146,6 +165,7 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
         }
     }
 
+    /// Helper function that splits the alphabet
     fn split_alphabet<'a>(alphabet: &'a [T]) -> (&[T], &[T]) {
         if alphabet.is_empty() {
             panic!("can not split empty alphabet")
@@ -156,6 +176,7 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
         }
     }
 
+    /// Helper function for access
     fn access_helper(&self, position: u64, alphabet: &[T], l: u64, r: u64) -> Option<T> {
         if alphabet.len() <= 1 {
             return Some(alphabet[0]);
@@ -188,6 +209,7 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
         }
     }
 
+    /// Helper function for rank
     fn rank_helper(
         &self,
         alphabet: &[T],
@@ -257,6 +279,7 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
         }
     }
 
+    /// Helper function for select
     fn select_helper(
         &self,
         alphabet: &[T],
