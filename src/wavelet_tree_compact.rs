@@ -445,6 +445,39 @@ impl<T: PartialEq + Copy> PartialEq for WaveletTreeCompact<T> {
     }
 }
 
+
+impl PartialEq<&str> for WaveletTreeCompact<char> {
+    fn eq(&self, other: &&str) -> bool {
+        if self.sequence_len as usize == other.chars().count() {
+            for (i, c) in other.chars().enumerate() {
+                match self.access(i as u64) {
+                    None => return false,
+                    Some(c2) => if c2 != c {return false},
+                }
+            }
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl<T: PartialEq + Copy> PartialEq<Vec<T>> for WaveletTreeCompact<T>{
+    fn eq(&self, other: &Vec<T>) -> bool {
+        if self.sequence_len as usize == other.len() {
+            for (i, c) in other.iter().enumerate() {
+                match self.access(i as u64) {
+                    None => return false,
+                    Some(c2) => if *c != c2 { return false},
+                }
+            }
+            true
+        } else {
+            false
+        }
+    }
+}
+
 pub struct TreeIteratorCompact<T: PartialEq + Copy> {
     index: usize,
     tree:  WaveletTreeCompact<T>,
@@ -721,5 +754,39 @@ mod tests {
         assert_eq!(b.select('a', 0),None);
         //rank can be Some(0)
         assert_eq!(b.rank('c',1),Some(0));
+    }
+
+    #[test]
+    fn test_partialeq_str() {
+        let test_string = "Hello world, こんにちは世界, Привет, мир";
+        let w_tree: WaveletTreeCompact<char> = test_string.into();
+
+        //Test if string is equal to tree sequence
+        assert!(w_tree == test_string);
+
+        //Test if it returns false for a string that is not equal
+        let test_string_wrong = "Hello worlt, こんにちは世界, Привет, мир";
+        assert!(w_tree != test_string_wrong);
+
+        //Test if it returns false for a string that is shorter (and thus also inequal)
+        let test_string_wrong = "Hello world";
+        assert!(w_tree != test_string_wrong);
+    }
+
+    #[test]
+    fn test_partialeq_vec() {
+        let vec = vec![1,2,3,4,5,1,2,4,1,3,5,2,4];
+        let w_tree: WaveletTreeCompact<i32> = vec.clone().into();
+
+        assert!(w_tree == vec);
+
+    }
+
+    #[test]
+    fn test_into_iter() {
+        let test_str: String = String::from("Hello world");
+        let w_tree: WaveletTreeCompact<char> = test_str.clone().into();
+
+        test_str.chars().eq(w_tree.into_iter());
     }
 }
