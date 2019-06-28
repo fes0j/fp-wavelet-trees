@@ -80,7 +80,7 @@ impl WaveletTreeNode {
         //split alphabet
         let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
         //proceed left or right
-        if self.bit_vec.bits()[position] == false {
+        if !self.bit_vec.bits()[position] {
             //object from left alphabet
             if let Some(ref lc) = self.left_child {
                 //if there is a child go there
@@ -113,13 +113,12 @@ impl WaveletTreeNode {
             } else {
                 if let Some(ref lc) = self.left_child {
                     //recursive rank from the leave
-                    let rank_left = match self.bit_vec.rank_0(n) {
+                    match self.bit_vec.rank_0(n) {
                         None => None,
                         //node does not contain alphabet up to n
                         Some(0) => Some(0),
                         Some(i) => lc.rank(left_alphabet, object, i - 1),
-                    };
-                    rank_left
+                    }
                 } else {
                     panic!("rank: There should be a left child but there isn't!");
                 }
@@ -131,13 +130,12 @@ impl WaveletTreeNode {
             } else {
                 if let Some(ref rc) = self.right_child {
                     //recursive rank from the leave
-                    let rank_right = match self.bit_vec.rank_1(n) {
+                    match self.bit_vec.rank_1(n) {
                         None => None,
                         //node does not contain alphabet up to n
                         Some(0) => Some(0),
                         Some(i) => rc.rank(right_alphabet, object, i - 1),
-                    };
-                    rank_right
+                    }
                 } else {
                     panic!("There should be a right child but there isn't!");
                 }
@@ -197,7 +195,7 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreePointer<T> {
     ///
     /// ```
     /// use fp_wavelet_trees::wavelet_tree_pointer_based::WaveletTreePointer as WTP;
-    /// let wTree:WTP<char> = fp_wavelet_trees::WaveletTree::new("example".chars());
+    /// let w_tree:WTP<char> = fp_wavelet_trees::WaveletTree::new("example".chars());
     /// ```
     fn new(iterator: impl Iterator<Item = T>) -> WaveletTreePointer<T> {
         WaveletTreePointer::from_vec(iterator.collect())
