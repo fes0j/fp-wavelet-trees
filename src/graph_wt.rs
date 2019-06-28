@@ -17,6 +17,7 @@ pub struct WaveletTreeGraph {
     wavelet_tree: Option<WaveletTreePointer<u64>>,
 }
 
+/// This graph builder is used, because a once created Tree can't be modified effectively.
 pub struct WTGraphBuilder {
     size: usize,
     bit_vec: Vec<bool>,
@@ -24,32 +25,54 @@ pub struct WTGraphBuilder {
 }
 
 impl WTGraphBuilder {
-    /// Adds an edge from startnode to endnode
-    pub fn add_edge<'a>(&'a mut self, startnode: u64, endnode: u64) -> Result<&'a mut WTGraphBuilder, &'static str> {
-        if self.size <= startnode as usize {
-            return Err("startnode not found in graph");
+    /// Adds an edge from start_node to end_node
+    ///
+    /// # Arguments
+    ///
+    /// * `start_node` id of the first node
+    /// * `end_node` id to the second node
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fp_wavelet_trees::graph_wt::WTGraphBuilder;
+    /// # let mut wt_graph_builder = WTGraphBuilder::with_capacities(2);
+    /// wt_graph_builder.add_edge(0, 1);
+    /// ```
+    pub fn add_edge<'a>(&'a mut self, start_node: u64, end_node: u64) -> Result<&'a mut WTGraphBuilder, &'static str> {
+        if self.size <= start_node as usize {
+            return Err("start_node not found in graph");
         }
-        if self.size <= endnode as usize {
-            return Err("endnode not found in graph");
+        if self.size <= end_node as usize {
+            return Err("end_node not found in graph");
         }
-        // contains the index of the (startnode+1)-th '1' in the bit_vec
-        let upper_insert_bound = select(&self.bit_vec, startnode + 1);
+        // contains the index of the (start_node+1)-th '1' in the bit_vec
+        let upper_insert_bound = select(&self.bit_vec, start_node + 1);
         if upper_insert_bound != None {
             self.bit_vec
                 .insert((upper_insert_bound.unwrap()) as usize, false);
             self.list.insert(
-                (upper_insert_bound.unwrap() - startnode - 1) as usize,
-                endnode,
+                (upper_insert_bound.unwrap() - start_node - 1) as usize,
+                end_node,
             );
         }
-        // this is the case if the startnode is the last node
+        // this is the case if the start_node is the last node
         else {
             self.bit_vec.push(false);
-            self.list.push(endnode);
+            self.list.push(end_node);
         }
         return Ok(self);
     }
 
+    /// Resolve the Builder to WaveletTreeGraph
+    ///
+    /// # Example
+    /// ```
+    /// # use fp_wavelet_trees::graph_wt::WTGraphBuilder;
+    ///  let mut wt_graph_builder = WTGraphBuilder::with_capacities(6);
+    ///    // Add edges..
+    ///  wt_graph_builder.to_graph();
+    /// ```
     pub fn to_graph(&self) -> WaveletTreeGraph {
         let bitmap = Some(bool_vec_to_rankselect(&self.bit_vec));
         let wavelet_tree = Some(WaveletTreePointer::new(self.list.clone()));
@@ -60,6 +83,11 @@ impl WTGraphBuilder {
         }
     }
 
+    /// Create a Builder for WaveletTreeGraphs
+    ///
+    /// # Arguments
+    ///
+    /// * `size` is the number of nodes used
     pub fn with_capacities(size: usize) -> Self {
         WTGraphBuilder {
             // fill the bit_vec with as much 'ones' as there are graph nodes
@@ -194,7 +222,6 @@ mod tests {
         let mut w_builder = WTGraphBuilder::with_capacities(6);
 
 
-        // let mut graph = WaveletTreeGraph::new(6);
         w_builder.add_edge(0, 1).expect("Could not add edge to graph");
         w_builder.add_edge(0, 3).expect("Could not add edge to graph");
         w_builder.add_edge(1, 0).expect("Could not add edge to graph");
