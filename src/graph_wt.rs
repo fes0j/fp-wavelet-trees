@@ -25,7 +25,7 @@ pub struct WTGraphBuilder {
 
 impl WTGraphBuilder {
     /// Adds an edge from startnode to endnode
-    fn add_edge<'a>(&'a mut self, startnode: u64, endnode: u64) -> Result<&'a mut WTGraphBuilder, &'static str> {
+    pub fn add_edge<'a>(&'a mut self, startnode: u64, endnode: u64) -> Result<&'a mut WTGraphBuilder, &'static str> {
         if self.size <= startnode as usize {
             return Err("startnode not found in graph");
         }
@@ -50,7 +50,7 @@ impl WTGraphBuilder {
         return Ok(self);
     }
 
-    fn to_graph(&self) -> WaveletTreeGraph {
+    pub fn to_graph(&self) -> WaveletTreeGraph {
         let bitmap = Some(bool_vec_to_rankselect(&self.bit_vec));
         let wavelet_tree = Some(WaveletTreePointer::new(self.list.clone()));
 
@@ -60,7 +60,7 @@ impl WTGraphBuilder {
         }
     }
 
-    fn with_capacities(size: usize) -> Self {
+    pub fn with_capacities(size: usize) -> Self {
         WTGraphBuilder {
             // fill the bit_vec with as much 'ones' as there are graph nodes
             bit_vec: vec![true; size],
@@ -81,9 +81,10 @@ impl GraphWithWT for WaveletTreeGraph {
     /// # Example
     ///
     /// ```
-    /// use fp_wavelet_trees::graph_wt::GraphWithWT as GWT;
-    /// let mut graph = fp_wavelet_trees::graph_wt::WaveletTreeGraph::new(2);
-    /// graph.add_edge(0, 1).expect("Could not add edge to graph");
+    /// use fp_wavelet_trees::graph_wt::*;
+    /// let mut w_builder = fp_wavelet_trees::graph_wt::WTGraphBuilder::with_capacities(6);
+    /// w_builder.add_edge(0, 1).expect("Could not add edge to graph");
+    /// let mut graph = w_builder.to_graph();
     /// assert_eq!(Some(1), graph.neighbor(0, 1));
     /// ```
     fn neighbor(&mut self, node: u64, nth_neighbor: u64) -> Option<u64> {
@@ -122,9 +123,10 @@ impl GraphWithWT for WaveletTreeGraph {
     /// # Example
     ///
     /// ```
-    /// use fp_wavelet_trees::graph_wt::GraphWithWT as GWT;
-    /// let mut graph = fp_wavelet_trees::graph_wt::WaveletTreeGraph::new(2);
-    /// graph.add_edge(0, 1).expect("Could not add edge to graph");
+    /// use fp_wavelet_trees::graph_wt::*;
+    /// let mut w_builder = fp_wavelet_trees::graph_wt::WTGraphBuilder::with_capacities(6);
+    /// w_builder.add_edge(0, 1).expect("Could not add edge to graph");
+    /// let mut graph = w_builder.to_graph();
     /// assert_eq!(Some(0), graph.reverse_neigbor(1, 1));
     /// ```
     fn reverse_neigbor(&mut self, node: u64, nth_reverse_neighbor: u64) -> Option<u64> {
