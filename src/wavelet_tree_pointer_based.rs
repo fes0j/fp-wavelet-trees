@@ -48,7 +48,7 @@ impl WaveletTreeNode {
             //create bitvector of string length
             let mut bitvector: BitVec<u8> = BitVec::with_capacity(input_string.len() as u64);
             //fill bitvector
-            input_string.iter().foreach(|character|
+            input_string.iter().for_each(|character|
                 //assign bitmap 0/1s
                 bitvector.push(right_alphabet.contains(&character)));
 
@@ -104,7 +104,7 @@ impl WaveletTreeNode {
     }
 
     /// Returns the number of occurences of a character in the sequence until position n
-    pub fn rank<T: PartialEq + Copy>(&self, alphabet: &[T], object: T, n: u64) -> Option<u64> {
+    fn rank<T: PartialEq + Copy>(&self, alphabet: &[T], object: T, n: u64) -> Option<u64> {
         //Determine in which half of the alphabet the character is
         let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
         if left_alphabet.contains(&object) {
@@ -213,9 +213,9 @@ impl<T: PartialEq + Copy> WaveletTreePointer<T> {
     ///
     /// ```
     /// use fp_wavelet_trees::wavelet_tree_pointer_based::WaveletTreePointer as WTP;
-    /// let wTree:WTP<char> = fp_wavelet_trees::WaveletTree::new("example".chars().collect());
+    /// let wTree:WTP<char> = WTP::new("example".chars().collect());
     /// ```
-    fn new(vector: Vec<T>) -> WaveletTreePointer<T> {
+    pub fn new(vector: Vec<T>) -> WaveletTreePointer<T> {
         //Get distinct objects from vec
         let mut alphabet = Vec::new();
         for v in vector.clone() {
