@@ -445,6 +445,32 @@ impl<T: PartialEq + Copy> PartialEq for WaveletTreeCompact<T> {
     }
 }
 
+pub struct TreeIteratorCompact<T: PartialEq + Copy> {
+    index: usize,
+    tree:  WaveletTreeCompact<T>,
+}
+
+impl<T: PartialEq + Copy> Iterator for TreeIteratorCompact<T> {
+    type Item = T;
+    fn next(&mut self) -> Option<T> {
+        let result = self.tree.access(self.index as u64);
+        self.index += 1;
+        result
+    }
+}
+
+impl<T: PartialEq + Copy> IntoIterator for WaveletTreeCompact<T> {
+    type Item = T;
+    type IntoIter = TreeIteratorCompact<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        TreeIteratorCompact {
+            index: 0,
+            tree: self,
+        }
+    }
+}
+
 impl From<String> for WaveletTreeCompact<char> {
     fn from(input: String) -> Self {
         WaveletTreeCompact::new(input.chars().collect())
