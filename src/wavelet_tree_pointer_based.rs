@@ -352,7 +352,6 @@ impl<T: PartialEq + Copy> PartialEq<Vec<T>> for WaveletTreePointer<T> {
     }
 }
 
-
 impl fmt::Debug for WaveletTreeNode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
@@ -386,6 +385,32 @@ impl<T: PartialEq + Copy> From<Vec<T>> for WaveletTreePointer<T> {
 impl<T: PartialEq + Copy> FromIterator<T> for WaveletTreePointer<T> {
     fn from_iter<I: IntoIterator<Item = T>>(input: I) -> Self {
         WaveletTreePointer::new(input.into_iter().collect())
+    }
+}
+
+pub struct TreeIteratorPointer<T: PartialEq + Copy> {
+    index: usize,
+    tree: WaveletTreePointer<T>,
+}
+
+impl<T: PartialEq + Copy> Iterator for TreeIteratorPointer<T> {
+    type Item = T;
+    fn next(&mut self) -> Option<T> {
+        let result = self.tree.access(self.index as u64);
+        self.index += 1;
+        result
+    }
+}
+
+impl<T: PartialEq + Copy> IntoIterator for WaveletTreePointer<T> {
+    type Item = T;
+    type IntoIter = TreeIteratorPointer<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        TreeIteratorPointer {
+            index: 0,
+            tree: self,
+        }
     }
 }
 
@@ -688,5 +713,13 @@ mod tests {
 
         let vec_short = vec![1, 2, 3, 4, 5];
         assert!(w_tree != vec_short);
+    }
+
+    #[test]
+    fn test_into_iter() {
+        let test_str: String = String::from("Hello world");
+        let w_tree: WaveletTreePointer<char> = test_str.clone().into();
+
+        test_str.chars().eq(w_tree.into_iter());
     }
 }
