@@ -769,8 +769,8 @@ mod tests {
         assert!(w_tree != test_string_wrong);
 
         //Test if it returns false for a string that is shorter (and thus also inequal)
-        let test_string_wrong = "Hello world";
-        assert!(w_tree != test_string_wrong);
+        let test_string_shorter = "Hello world";
+        assert!(w_tree != test_string_shorter);
     }
 
     #[test]
@@ -780,6 +780,11 @@ mod tests {
 
         assert!(w_tree == vec);
 
+        let vec_wrong = vec![1,2,3,4,5,1,2,4,1,3,7,2,4];
+        assert!(w_tree != vec_wrong);
+
+        let vec_short = vec![1,2,3,4,5];
+        assert!(w_tree != vec_short);
     }
 
     #[test]
