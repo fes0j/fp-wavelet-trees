@@ -9,7 +9,6 @@ bio = "*"
 bv = { version = "0.10", features = ["serde"] }
 serde = "1.0.91"
 itertools = "*"
-rs-graph = "0.17.0"
 
 
 [dev-dependencies]
