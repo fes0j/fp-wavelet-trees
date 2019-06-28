@@ -2,7 +2,7 @@ use bio::data_structures::rank_select::RankSelect;
 use bv::BitVec;
 use bv::Bits;
 use bv::BitsExt;
-use itertools::Itertools;
+use std::iter::FromIterator;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -34,7 +34,7 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
         let sequence_len = input.len() as u64;
         //Create alphabet
         let mut alphabet: Vec<T> = Vec::new();
-        input.iter().foreach(|x| {
+        input.iter().for_each(|x| {
             if !alphabet.contains(&x) {
                 alphabet.push(*x);
             }
@@ -46,7 +46,7 @@ impl<T: PartialEq + Copy> WaveletTreeCompact<T> {
         //Create bitvecs for levels
         if alphabet.len() == 1 {
             let mut local_bitvec = BitVec::new();
-            input.iter().foreach(|_x| {
+            input.iter().for_each(|_x| {
                 local_bitvec.push(false);
             });
             levels.push(local_bitvec);
@@ -363,10 +363,6 @@ impl<T: PartialEq + Copy + Debug> Debug for WaveletTreeCompact<T> {
 }
 
 impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreeCompact<T> {
-    fn new(iterator: impl Iterator<Item = T>) -> Self {
-        WaveletTreeCompact::new(iterator.collect())
-    }
-
     /// Returns the element at the i-th position
     /// Returns None if i is out of bounds
     ///
@@ -394,13 +390,13 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreeCompact<T> {
         }
     }
 
-    /// Returns the number of occurrences of object up to n
-    /// Returns None if the object doesn't occur at all
+    /// Returns the number of occurrences of object up to index n
+    /// Returns None if the object doesn't occur at all or n is larger than the length of the content
     ///
     /// # Arguments
     ///
     /// * `object` The object to find the occurrences of
-    /// * `n` The position up to which to find occurrences
+    /// * `n` The index up to which to find occurrences
     ///
     /// # Example
     ///
@@ -413,10 +409,11 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreeCompact<T> {
     /// assert_eq!(w_tree.rank('c', 11), None);
     /// ```
     fn rank(&self, object: T, n: u64) -> Option<u64> {
+        if n >= self.sequence_len {return None;}
         self.rank_helper(&self.alphabet[..], object, n, 0, self.sequence_len - 1)
     }
 
-    /// Returns the position of the n-th occurrence of object
+    /// Returns the position of the n-th occurrence (starting with 1) of object
     /// Returns None if there isn't a n-th occurrence
     ///
     /// # Arguments
@@ -429,13 +426,15 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreeCompact<T> {
     /// ```
     /// use crate::fp_wavelet_trees::WaveletTree;
     /// let w_tree = fp_wavelet_trees::wavelet_tree_compact::WaveletTreeCompact::from("abcab");
-    /// assert_eq!(w_tree.select('a', 0), Some(0));
-    /// assert_eq!(w_tree.select('a', 1), Some(3));
-    /// assert_eq!(w_tree.select('c', 0), Some(2));
-    /// assert_eq!(w_tree.select('c', 1), None);
+    /// assert_eq!(w_tree.select('a', 0), None);
+    /// assert_eq!(w_tree.select('a', 1), Some(0));
+    /// assert_eq!(w_tree.select('a', 2), Some(3));
+    /// assert_eq!(w_tree.select('c', 1), Some(2));
+    /// assert_eq!(w_tree.select('c', 2), None);
     /// ```
     ///
     fn select(&self, object: T, n: u64) -> Option<u64> {
+        if self.sequence_len == 0 {return None;}
         self.select_helper(&self.alphabet[..], object, n, 0, self.sequence_len - 1)
     }
 }
@@ -461,6 +460,12 @@ impl From<&str> for WaveletTreeCompact<char> {
 impl<T: PartialEq + Copy> From<Vec<T>> for WaveletTreeCompact<T> {
     fn from(input: Vec<T>) -> Self {
         WaveletTreeCompact::new(input)
+    }
+}
+
+impl<T: PartialEq + Copy> FromIterator<T> for WaveletTreeCompact<T> {
+    fn from_iter<I: IntoIterator<Item=T>>(input: I) -> Self {
+        WaveletTreeCompact::new(input.into_iter().collect())
     }
 }
 
@@ -669,5 +674,26 @@ mod tests {
         let w_tree2: WaveletTreeCompact<char> = serde_json::from_str(&serialized).unwrap();
 
         assert_eq!(w_tree, w_tree2)
+    }
+
+    #[test]
+    fn test_fail_management(){
+        //test with empty content
+        let a = WaveletTreeCompact::from("");
+        assert_eq!(a.access(0),None);
+        assert_eq!(a.rank('a', 0),None);
+        assert_eq!(a.select('a', 0),None);
+        //out of index wil yield None
+        let b = WaveletTreeCompact::from("abc");
+        assert_eq!(b.access(4),None);
+        assert_eq!(b.rank('b', 4),None);
+        assert_eq!(b.select('b', 2),None);
+        //out of alphabet char will yield None
+        assert_eq!(b.rank('d',1), None);
+        assert_eq!(b.select('d',1), None);
+        //select of 0th will be None
+        assert_eq!(b.select('a', 0),None);
+        //rank can be Some(0)
+        assert_eq!(b.rank('c',1),Some(0));
     }
 }

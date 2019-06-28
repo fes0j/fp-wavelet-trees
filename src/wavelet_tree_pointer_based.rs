@@ -2,6 +2,7 @@ use crate::WaveletTree;
 use bio::data_structures::rank_select::RankSelect;
 use bv::BitVec;
 use itertools::Itertools;
+use std::iter::FromIterator;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -47,7 +48,7 @@ impl WaveletTreeNode {
             //create bitvector of string length
             let mut bitvector: BitVec<u8> = BitVec::with_capacity(input_string.len() as u64);
             //fill bitvector
-            input_string.iter().foreach(|character|
+            input_string.iter().for_each(|character|
                 //assign bitmap 0/1s
                 bitvector.push(right_alphabet.contains(&character)));
 
@@ -103,7 +104,7 @@ impl WaveletTreeNode {
     }
 
     /// Returns the number of occurences of a character in the sequence until position n
-    pub fn rank<T: PartialEq + Copy>(&self, alphabet: &[T], object: T, n: u64) -> Option<u64> {
+    fn rank<T: PartialEq + Copy>(&self, alphabet: &[T], object: T, n: u64) -> Option<u64> {
         //Determine in which half of the alphabet the character is
         let (left_alphabet, right_alphabet) = alphabet.split_at(alphabet.len() / 2);
         if left_alphabet.contains(&object) {
@@ -185,22 +186,6 @@ impl WaveletTreeNode {
 }
 
 impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreePointer<T> {
-    /// Returns a WavletTree using pointer
-    ///
-    /// # Arguments
-    ///
-    /// * `iterator` Iterator over any objects implementing PartialEq and Copy traits
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use fp_wavelet_trees::wavelet_tree_pointer_based::WaveletTreePointer as WTP;
-    /// let w_tree:WTP<char> = fp_wavelet_trees::WaveletTree::new("example".chars());
-    /// ```
-    fn new(iterator: impl Iterator<Item = T>) -> WaveletTreePointer<T> {
-        WaveletTreePointer::from_vec(iterator.collect())
-    }
-
     fn access(&self, position: u64) -> Option<T> {
         self.root_node.access(position, &self.alphabet[..])
     }
@@ -216,8 +201,20 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreePointer<T> {
 }
 
 impl<T: PartialEq + Copy> WaveletTreePointer<T> {
-    fn from_vec(vector: Vec<T>) -> WaveletTreePointer<T> {
-        //Get distinct characters from string
+    /// Returns a WavletTree using pointer
+    ///
+    /// # Arguments
+    ///
+    /// * `vector` Vec of any objects implementing PartialEq and Copy traits
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use fp_wavelet_trees::wavelet_tree_pointer_based::WaveletTreePointer as WTP;
+    /// let wTree:WTP<char> = WTP::new("example".chars().collect());
+    /// ```
+    pub fn new(vector: Vec<T>) -> WaveletTreePointer<T> {
+        //Get distinct objects from vec
         let mut alphabet = Vec::new();
         for v in vector.clone() {
             if !alphabet.contains(&v) {
@@ -274,19 +271,25 @@ impl fmt::Debug for WaveletTreeNode {
 
 impl From<String> for WaveletTreePointer<char> {
     fn from(input: String) -> Self {
-        WaveletTreePointer::new(input.chars())
+        WaveletTreePointer::new(input.chars().collect())
     }
 }
 
 impl From<&str> for WaveletTreePointer<char> {
     fn from(input: &str) -> Self {
-        WaveletTreePointer::new(input.chars())
+        WaveletTreePointer::new(input.chars().collect())
     }
 }
 
 impl<T: PartialEq + Copy> From<Vec<T>> for WaveletTreePointer<T> {
     fn from(input: Vec<T>) -> Self {
-        WaveletTreePointer::from_vec(input)
+        WaveletTreePointer::new(input)
+    }
+}
+
+impl<T: PartialEq + Copy> FromIterator<T> for WaveletTreePointer<T> {
+    fn from_iter<I: IntoIterator<Item=T>>(input: I) -> Self {
+        WaveletTreePointer::new(input.into_iter().collect())
     }
 }
 
@@ -304,7 +307,7 @@ mod tests {
     ///
     #[test]
     fn test_2_letter_tree() {
-        let two_tree: WaveletTreePointer<char> = WaveletTreePointer::new("ab".chars());
+        let two_tree: WaveletTreePointer<char> = WaveletTreePointer::from("ab");//("ab".chars());
         let alphabet: Vec<char> = "ab".chars().collect();
 
         assert_eq!(two_tree.alphabet, alphabet);
@@ -326,7 +329,7 @@ mod tests {
     #[test]
     fn test_5_letter_tree() {
         let input_string = "abcda";
-        let five_tree: WaveletTreePointer<char> = WaveletTreePointer::new(input_string.chars());
+        let five_tree: WaveletTreePointer<char> = WaveletTreePointer::from(input_string);
         let alphabet: Vec<char> = input_string.chars().unique().collect();
 
         assert_eq!(five_tree.alphabet, alphabet);
@@ -354,7 +357,7 @@ mod tests {
     #[test]
     fn test_7_letter_tree() {
         let string: Vec<char> = "abcdefg".chars().collect();
-        let seven_tree: WaveletTreePointer<char> = WaveletTreePointer::new(string.into_iter());
+        let seven_tree: WaveletTreePointer<char> = WaveletTreePointer::new(string);
         // let alphabet: Vec<char> = input_string.chars().unique().collect();
 
         // assert_eq!(seven_tree.alphabet, alphabet);
@@ -373,8 +376,8 @@ mod tests {
     /// Testing tests
     #[test]
     fn test_new() {
-        let test_string = "ab".chars();
-        let w_tree = WaveletTreePointer::new(test_string);
+        let test_string = "ab";
+        let w_tree = WaveletTreePointer::from(test_string);
 
         let mut bits: BitVec<u8> = BitVec::new_fill(false, 2);
         bits.set_bit(0, false);
@@ -396,7 +399,7 @@ mod tests {
 
     #[test]
     fn test_access_empty() {
-        let w_tree = WaveletTreePointer::new("".chars());
+        let w_tree = WaveletTreePointer::from("");
 
         assert_eq!(None, w_tree.access(0));
     }
@@ -405,7 +408,7 @@ mod tests {
     #[test]
     fn test_access_1_letter() {
         let test_string: Vec<char> = "a".chars().collect();
-        let w_tree = WaveletTreePointer::new("a".chars());
+        let w_tree = WaveletTreePointer::from("a");
 
         assert_eq!(test_string[0], w_tree.access(0).unwrap());
         assert_eq!(None, w_tree.access(1));
@@ -414,7 +417,7 @@ mod tests {
     #[test]
     fn test_access_7_letter() {
         let test_string: Vec<char> = "abcdefg".chars().collect();
-        let w_tree = WaveletTreePointer::new(test_string.clone().into_iter());
+        let w_tree = WaveletTreePointer::new(test_string.clone());
 
         assert_eq!(test_string[0], w_tree.access(0).unwrap());
         assert_eq!(test_string[1], w_tree.access(1).unwrap());
@@ -428,7 +431,7 @@ mod tests {
     #[test]
     fn test_select_basic() {
         let test_string = "cabdacdbabadcab";
-        let w_tree = WaveletTreePointer::new(test_string.clone().chars());
+        let w_tree = WaveletTreePointer::from(test_string);
 
         assert_eq!(w_tree.select('c', 2), Some(5));
     }
@@ -437,7 +440,7 @@ mod tests {
     #[test]
     fn test_select_outside_alphabet() {
         let test_string = "cabdacdbabadcab";
-        let w_tree = WaveletTreePointer::new(test_string.clone().chars());
+        let w_tree = WaveletTreePointer::from(test_string);
         assert_eq!(w_tree.select('f', 2), None);
     }
 
@@ -445,7 +448,7 @@ mod tests {
     #[test]
     fn test_select_out_of_bounds() {
         let test_string = "cabdacdbabadcab";
-        let w_tree = WaveletTreePointer::new(test_string.clone().chars());
+        let w_tree = WaveletTreePointer::from(test_string);
 
         assert_eq!(w_tree.select('c', 4), None);
     }
@@ -453,7 +456,7 @@ mod tests {
     #[test]
     fn test_serialize_deserialize() {
         let test_string = "cbacbcbcbbcabcabcabcabbca";
-        let w_tree = WaveletTreePointer::new(test_string.clone().chars());
+        let w_tree = WaveletTreePointer::from(test_string);
 
         let serialized = serde_json::to_string(&w_tree).unwrap();
         let w_tree2: WaveletTreePointer<char> = serde_json::from_str(&serialized).unwrap();
@@ -464,7 +467,7 @@ mod tests {
     #[test]
     fn test_select_5_letter() {
         let test_string = "abcde";
-        let w_tree = WaveletTreePointer::new(test_string.clone().chars());
+        let w_tree = WaveletTreePointer::from(test_string);
 
         assert_eq!(w_tree.select('a', 1), Some(0));
         assert_eq!(w_tree.select('b', 1), Some(1));
@@ -476,7 +479,7 @@ mod tests {
     #[test]
     fn test_select_2_letter() {
         let test_string = "ab";
-        let w_tree = WaveletTreePointer::new(test_string.clone().chars());
+        let w_tree = WaveletTreePointer::from(test_string);
 
         assert_eq!(w_tree.select('a', 1), Some(0));
         assert_eq!(w_tree.select('b', 1), Some(1));
@@ -489,7 +492,7 @@ mod tests {
     fn test_rank_2_letters() {
         //let test_string = "aaaaaaaaaabsbsbdsbdsabb";
         let test_string = "ababababababab";
-        let w_tree = WaveletTreePointer::new(test_string.clone().chars());
+        let w_tree = WaveletTreePointer::from(test_string);
 
         assert_eq!(w_tree.rank('a', 0), Some(1));
         assert_eq!(w_tree.rank('b', 0), Some(0));
@@ -508,7 +511,7 @@ mod tests {
     #[test]
     fn test_rank_5_letter() {
         let test_string = "abcde";
-        let w_tree = WaveletTreePointer::new(test_string.clone().chars());
+        let w_tree = WaveletTreePointer::from(test_string);
 
         assert_eq!(w_tree.rank('a', 0), Some(1));
         assert_eq!(w_tree.rank('b', 1), Some(1));
@@ -521,7 +524,7 @@ mod tests {
     fn test_rank_unicode() {
         let test_string = "Hello world, こんにちは世界, Привет, мир";
         let test_string = UnicodeSegmentation::graphemes(test_string, true).collect::<Vec<&str>>();
-        let w_tree: WaveletTreePointer<&str> = WaveletTree::new(test_string.into_iter());
+        let w_tree = WaveletTreePointer::from_iter(test_string);
 
         //println!("{:#?}", w_tree);
         assert_eq!(w_tree.rank("o", 4), Some(1));
@@ -537,5 +540,26 @@ mod tests {
         assert_eq!(w_tree.rank("и", 0), Some(0));
 
         assert_eq!(w_tree.rank("木", 32), None);
+    }
+
+    #[test]
+    fn test_fail_management(){
+        //test with empty content
+        let a = WaveletTreePointer::from("");
+        assert_eq!(a.access(0),None);
+        assert_eq!(a.rank('a', 0),None);
+        assert_eq!(a.select('a', 0),None);
+        //out of index wil yield None
+        let b = WaveletTreePointer::from("abc");
+        assert_eq!(b.access(4),None);
+        assert_eq!(b.rank('b', 4),None);
+        assert_eq!(b.select('b', 2),None);
+        //out of alphabet char will yield None
+        assert_eq!(b.rank('d',1), None);
+        assert_eq!(b.select('d',1), None);
+        //select of 0th will be None
+        assert_eq!(b.select('a', 0),None);
+        //rank can be Some(0)
+        assert_eq!(b.rank('c',1),Some(0));
     }
 }
