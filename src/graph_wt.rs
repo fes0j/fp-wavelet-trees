@@ -66,6 +66,21 @@ impl GraphWithWT for WaveletTreeGraph {
         Err("Graph already created, cannot further add edges")
     }
 
+    /// Returns the nth-neigbor of a node in a graph stored in a WaveletTree
+    ///
+    /// # Arguments
+    ///
+    /// * `node` The index of the node in the graph whose neigbor is to be searched
+    /// * `nth_neighbor` The nth-neigbor (by the order of insertion)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use fp_wavelet_trees::graph_wt::GraphWithWT as GWT;
+    /// let mut graph = fp_wavelet_trees::graph_wt::WaveletTreeGraph::new(2);
+    /// graph.add_edge(0, 1).expect("Could not add edge to graph");
+    /// assert_eq!(Some(1), graph.neighbor(0, 1));
+    /// ```
     fn neighbor(&mut self, node: u64, nth_neighbor: u64) -> Option<u64> {
         if self.wavelet_tree == None {
             self.bitmap = Some(bool_vec_to_rankselect(&self.bit_vec));
@@ -95,6 +110,21 @@ impl GraphWithWT for WaveletTreeGraph {
             .access(l.unwrap() + nth_neighbor - (node + 1))
     }
 
+    /// Returns the nth-reverse-neigbor of a node in a graph stored in a WaveletTree
+    ///
+    /// # Arguments
+    ///
+    /// * `node` The index of the node in the graph whose reverse-neigbor is to be searched
+    /// * `nth_reverse_neighbor` The nth-reverse-neigbor (by the order of insertion)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use fp_wavelet_trees::graph_wt::GraphWithWT as GWT;
+    /// let mut graph = fp_wavelet_trees::graph_wt::WaveletTreeGraph::new(2);
+    /// graph.add_edge(0, 1).expect("Could not add edge to graph");
+    /// assert_eq!(Some(0), graph.reverse_neigbor(1, 1));
+    /// ```
     fn reverse_neigbor(&mut self, node: u64, nth_reverse_neighbor: u64) -> Option<u64> {
         if self.wavelet_tree == None {
             self.bitmap = Some(bool_vec_to_rankselect(&self.bit_vec));
@@ -212,18 +242,22 @@ mod tests {
         // Reverse neigbors of node 0
         assert_eq!(Some(1), graph.reverse_neigbor(0, 1));
         assert_eq!(Some(4), graph.reverse_neigbor(0, 2));
+        assert_eq!(None, graph.reverse_neigbor(0, 3));
 
         // Reverse neigbors of node 1
         assert_eq!(Some(0), graph.reverse_neigbor(1, 1));
+        assert_eq!(None, graph.reverse_neigbor(1, 2));
 
         // Reverse neigbors of node 2
         assert_eq!(Some(1), graph.reverse_neigbor(2, 1));
         assert_eq!(Some(3), graph.reverse_neigbor(2, 2));
+        assert_eq!(None, graph.reverse_neigbor(2, 3));
 
         // Reverse neigbors of node 3
         assert_eq!(Some(0), graph.reverse_neigbor(3, 1));
         assert_eq!(Some(1), graph.reverse_neigbor(3, 2));
         assert_eq!(Some(4), graph.reverse_neigbor(3, 3));
+        assert_eq!(None, graph.reverse_neigbor(3, 4));
 
         // Reverse neigbors of node 4
         assert_eq!(None, graph.reverse_neigbor(4, 1));
