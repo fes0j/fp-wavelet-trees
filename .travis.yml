@@ -22,7 +22,9 @@ addons:
       - binutils-dev
       - libiberty-dev
 
-cache: cargo
+cache:
+  - cargo
+  - kcov
 
 script:
   - cargo build --all
@@ -30,7 +32,7 @@ script:
 
 after_success:
   - |
-      cargo doc \
+      cargo doc --no-deps --lib && \
       && echo '<meta http-equiv=refresh content=0;url=fp-wavelet-trees/index.html>' > target/doc/index.html && \
       sudo pip install ghp-import && \
       ghp-import -n target/doc && \
@@ -46,7 +48,7 @@ after_success:
       make install DESTDIR=../../kcov-build &&
       cd ../.. &&
       rm -rf kcov-master &&
-      for file in target/debug/examplerust-*; do [ -x "${file}" ] || continue; mkdir -p "target/cov/$(basename $file)"; echo "$(basename $file)"; ./kcov-build/usr/local/bin/kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/$(basename $file)" "$file"; done &&
+      for file in target/debug/fp_wavelet_trees-*; do [ -x "${file}" ] || continue; mkdir -p "target/cov/$(basename $file)"; echo "$(basename $file)"; ./kcov-build/usr/local/bin/kcov --exclude-pattern=/.cargo,/usr/lib --verify "target/cov/$(basename $file)" "$file"; done &&
       bash <(curl -s https://codecov.io/bash) &&
       echo "Uploaded code coverage"
 
