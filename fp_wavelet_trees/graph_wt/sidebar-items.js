@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["WTGraphBuilder","This graph builder is used, because a once created Tree can't be modified effectively."],["WaveletTreeGraph",""]],"trait":[["GraphWithWT",""]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["TreeIteratorPointer",""],["WaveletTreePointer","A WaveletTree with Pointers is represented here"]]});

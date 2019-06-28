@@ -1,0 +1,1 @@
+initSidebarItems({"trait":[["SequenceRead",""]],"type":[["AminoAcid","An amino acid"],["Base","A DNA base"],["Sequence","A biological sequence"]]});
