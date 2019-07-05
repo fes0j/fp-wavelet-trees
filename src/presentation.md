@@ -1,4 +1,4 @@
-# Presentation
+# Präsentation
 
 ## Rust
 - "die doc ist schön": geteste Beispiele in der Dokumentation
@@ -9,6 +9,8 @@
 - clippy
 - Schnelle Rückmeldung bei Stylefehlern
 - rustfmt hilfreich → Einheitlicher Style
+- Bestehende Graph-Bibilotheken schwierig auf WT umzustellen
+- Traits hilfreich um einen gemeinsamen Nenner zu haben.
 
 ## DevOps
 - Tests wurden quasi parallel geschrieben
