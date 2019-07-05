@@ -73,9 +73,10 @@ impl WTGraphBuilder {
     /// # Example
     /// ```
     /// # use fp_wavelet_trees::graph_wt::WTGraphBuilder;
+    /// # use fp_wavelet_trees::wavelet_tree_compact::*;
     ///  let mut wt_graph_builder = WTGraphBuilder::with_capacities(6);
     ///    // Add edges..
-    ///  wt_graph_builder.to_graph();
+    ///  wt_graph_builder.to_graph::<WaveletTreeCompact<u64>>();
     /// ```
     pub fn to_graph<T : WaveletTree<u64> + From<Vec<u64>>>(&self) -> WaveletTreeGraph<T> {
         let bitmap = Some(bool_vec_to_rankselect(&self.bit_vec));
@@ -92,7 +93,7 @@ impl WTGraphBuilder {
     /// # Arguments
     ///
     /// * `size` is the number of nodes used
-    pub fn with_capacities<T>(size: usize) -> Self {
+    pub fn with_capacities(size: usize) -> Self {
         WTGraphBuilder {
             // fill the bit_vec with as much 'ones' as there are graph nodes
             bit_vec: vec![true; size],
@@ -115,9 +116,10 @@ impl <T: WaveletTree<u64>> GraphWithWT for WaveletTreeGraph<T> {
     ///
     /// ```
     /// use fp_wavelet_trees::graph_wt::*;
+    /// use fp_wavelet_trees::wavelet_tree_compact::*;
     /// let mut w_builder = fp_wavelet_trees::graph_wt::WTGraphBuilder::with_capacities(6);
     /// w_builder.add_edge(0, 1).expect("Could not add edge to graph");
-    /// let mut graph = w_builder.to_graph();
+    /// let mut graph = w_builder.to_graph::<WaveletTreeCompact<u64>>();
     /// assert_eq!(Some(1), graph.neighbor(0, 1));
     /// ```
     fn neighbor(&mut self, node: u64, nth_neighbor: u64) -> Option<u64> {
@@ -156,9 +158,10 @@ impl <T: WaveletTree<u64>> GraphWithWT for WaveletTreeGraph<T> {
     ///
     /// ```
     /// use fp_wavelet_trees::graph_wt::*;
+    /// use fp_wavelet_trees::wavelet_tree_compact::*;
     /// let mut w_builder = fp_wavelet_trees::graph_wt::WTGraphBuilder::with_capacities(6);
     /// w_builder.add_edge(0, 1).expect("Could not add edge to graph");
-    /// let mut graph = w_builder.to_graph();
+    /// let mut graph = w_builder.to_graph::<WaveletTreeCompact<u64>>();
     /// assert_eq!(Some(0), graph.reverse_neigbor(1, 1));
     /// ```
     fn reverse_neigbor(&mut self, node: u64, nth_reverse_neighbor: u64) -> Option<u64> {
@@ -214,13 +217,13 @@ mod tests {
     use super::*;
 
     fn create_sample_graph<T : WaveletTree<u64> + From<Vec<u64>>>() -> WaveletTreeGraph<T>{
-        let w_builder = fill_wt_builder::<T>();
+        let w_builder = fill_wt_builder();
 
-        w_builder.to_graph()
+        w_builder.to_graph::<T>()
     }
 
-    fn fill_wt_builder<T>() -> WTGraphBuilder {
-        let mut w_builder = WTGraphBuilder::with_capacities::<T>(6);
+    fn fill_wt_builder() -> WTGraphBuilder {
+        let mut w_builder = WTGraphBuilder::with_capacities(6);
 
         w_builder
             .add_edge(0, 1)
@@ -252,7 +255,7 @@ mod tests {
 
     #[test]
     fn test_add_edge() {
-        let graph = fill_wt_builder::<WaveletTreePointer<u64>>();
+        let graph = fill_wt_builder();
 
         assert_eq!(graph.list, vec![1, 3, 0, 3, 2, 2, 0, 3]);
         assert_eq!(
@@ -263,7 +266,7 @@ mod tests {
             ]
         );
 
-        let mut graph = fill_wt_builder::<WaveletTreePointer<u64>>();
+        let mut graph = fill_wt_builder();
         graph.add_edge(5, 0).expect("Could not add edge to graph");
 
         assert_eq!(graph.list, vec![1, 3, 0, 3, 2, 2, 0, 3, 0]);
@@ -334,7 +337,7 @@ mod tests {
 
     #[test]
     fn test_wrong_edge() {
-        let mut w_builder = WTGraphBuilder::with_capacities::<WaveletTreeCompact<u64>>(2);
+        let mut w_builder = WTGraphBuilder::with_capacities(2);
 
        assert!( w_builder.add_edge(1, 4).is_err(), "This edge should not be allowed");
        assert!( w_builder.add_edge(4, 1).is_err(), "This edge should not be allowed");
