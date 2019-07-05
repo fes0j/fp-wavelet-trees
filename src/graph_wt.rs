@@ -1,4 +1,5 @@
 use crate::wavelet_tree_pointer_based::*;
+use crate::wavelet_tree_compact::*;
 use crate::WaveletTree;
 use bio::data_structures::rank_select::RankSelect;
 use bv::BitVec;
@@ -12,9 +13,11 @@ pub trait GraphWithWT {
     fn reverse_neigbor(&mut self, node: u64, nth_reverse_neighbor: u64) -> Option<u64>;
 }
 
-pub struct WaveletTreeGraph {
+
+
+pub struct WaveletTreeGraph<T: WaveletTree<u64>> {
     bitmap: Option<RankSelect>,
-    wavelet_tree: Option<WaveletTreePointer<u64>>,
+    wavelet_tree: Option<T>,
 }
 
 /// This graph builder is used, because a once created Tree can't be modified effectively.
@@ -74,9 +77,9 @@ impl WTGraphBuilder {
     ///    // Add edges..
     ///  wt_graph_builder.to_graph();
     /// ```
-    pub fn to_graph(&self) -> WaveletTreeGraph {
+    pub fn to_graph<T : WaveletTree<u64> + From<Vec<u64>>>(&self) -> WaveletTreeGraph<T> {
         let bitmap = Some(bool_vec_to_rankselect(&self.bit_vec));
-        let wavelet_tree = Some(WaveletTreePointer::new(self.list.clone()));
+        let wavelet_tree = Some(T::from(self.list.clone()));
 
         WaveletTreeGraph {
             bitmap,
@@ -89,7 +92,7 @@ impl WTGraphBuilder {
     /// # Arguments
     ///
     /// * `size` is the number of nodes used
-    pub fn with_capacities(size: usize) -> Self {
+    pub fn with_capacities<T>(size: usize) -> Self {
         WTGraphBuilder {
             // fill the bit_vec with as much 'ones' as there are graph nodes
             bit_vec: vec![true; size],
@@ -99,7 +102,8 @@ impl WTGraphBuilder {
     }
 }
 
-impl GraphWithWT for WaveletTreeGraph {
+impl <T: WaveletTree<u64>> GraphWithWT for WaveletTreeGraph<T> {
+
     /// Returns the nth-neigbor of a node in a graph stored in a WaveletTree
     ///
     /// # Arguments
@@ -209,14 +213,14 @@ fn bool_vec_to_rankselect(bit_vec: &Vec<bool>) -> RankSelect {
 mod tests {
     use super::*;
 
-    fn create_sample_graph() -> WaveletTreeGraph {
-        let w_builder = fill_wt_builder();
+    fn create_sample_graph<T : WaveletTree<u64> + From<Vec<u64>>>() -> WaveletTreeGraph<T>{
+        let w_builder = fill_wt_builder::<T>();
 
         w_builder.to_graph()
     }
 
-    fn fill_wt_builder() -> WTGraphBuilder {
-        let mut w_builder = WTGraphBuilder::with_capacities(6);
+    fn fill_wt_builder<T>() -> WTGraphBuilder {
+        let mut w_builder = WTGraphBuilder::with_capacities::<T>(6);
 
         w_builder
             .add_edge(0, 1)
@@ -248,7 +252,7 @@ mod tests {
 
     #[test]
     fn test_add_edge() {
-        let graph = fill_wt_builder();
+        let graph = fill_wt_builder::<WaveletTreePointer<u64>>();
 
         assert_eq!(graph.list, vec![1, 3, 0, 3, 2, 2, 0, 3]);
         assert_eq!(
@@ -259,7 +263,7 @@ mod tests {
             ]
         );
 
-        let mut graph = fill_wt_builder();
+        let mut graph = fill_wt_builder::<WaveletTreePointer<u64>>();
         graph.add_edge(5, 0).expect("Could not add edge to graph");
 
         assert_eq!(graph.list, vec![1, 3, 0, 3, 2, 2, 0, 3, 0]);
@@ -274,7 +278,7 @@ mod tests {
 
     #[test]
     fn test_neighbor() {
-        let mut graph = create_sample_graph();
+        let mut graph = create_sample_graph::<WaveletTreePointer<u64>>();
 
         assert_eq!(None, graph.neighbor(0, 3));
         assert_eq!(Some(3), graph.neighbor(0, 2));
@@ -299,7 +303,7 @@ mod tests {
 
     #[test]
     fn test_reverse_neighbor() {
-        let mut graph = create_sample_graph();
+        let mut graph = create_sample_graph::<WaveletTreePointer<u64>>();
 
         // Reverse neigbors of node 0
         assert_eq!(Some(1), graph.reverse_neigbor(0, 1));
@@ -330,7 +334,7 @@ mod tests {
 
     #[test]
     fn test_wrong_edge() {
-        let mut w_builder = WTGraphBuilder::with_capacities(2);
+        let mut w_builder = WTGraphBuilder::with_capacities::<WaveletTreeCompact<u64>>(2);
 
        assert!( w_builder.add_edge(1, 4).is_err(), "This edge should not be allowed");
        assert!( w_builder.add_edge(4, 1).is_err(), "This edge should not be allowed");
