@@ -4,6 +4,8 @@ use bv::BitVec;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::iter::FromIterator;
+use itertools::Itertools;
+use std::hash::Hash;
 
 /// A WaveletTree with Pointers is represented here
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -254,7 +256,7 @@ impl<T: PartialEq + Copy> WaveletTree<T> for WaveletTreePointer<T> {
     }
 }
 
-impl<T: PartialEq + Copy> WaveletTreePointer<T> {
+impl<T: Eq + Copy + Hash> WaveletTreePointer<T> {
     /// Returns a WavletTree using pointer
     ///
     /// # Arguments
@@ -269,12 +271,8 @@ impl<T: PartialEq + Copy> WaveletTreePointer<T> {
     /// ```
     pub fn new(vector: Vec<T>) -> WaveletTreePointer<T> {
         //Get distinct objects from vec
-        let mut alphabet = Vec::new();
-        for v in vector.clone() {
-            if !alphabet.contains(&v) {
-                alphabet.push(v);
-            }
-        }
+        let mut alphabet : Vec<T> = Vec::new();
+        alphabet.extend(vector.iter().unique());
 
         //edge case of an empty or single char string
         if alphabet.len() < 2 {
@@ -375,13 +373,13 @@ impl From<&str> for WaveletTreePointer<char> {
     }
 }
 
-impl<T: PartialEq + Copy> From<Vec<T>> for WaveletTreePointer<T> {
+impl<T: Eq + Copy + Hash> From<Vec<T>> for WaveletTreePointer<T> {
     fn from(input: Vec<T>) -> Self {
         WaveletTreePointer::new(input)
     }
 }
 
-impl<T: PartialEq + Copy> FromIterator<T> for WaveletTreePointer<T> {
+impl<T: Eq + Copy + Hash> FromIterator<T> for WaveletTreePointer<T> {
     fn from_iter<I: IntoIterator<Item = T>>(input: I) -> Self {
         WaveletTreePointer::new(input.into_iter().collect())
     }
@@ -392,7 +390,7 @@ pub struct TreeIteratorPointer<T: PartialEq + Copy> {
     tree: WaveletTreePointer<T>,
 }
 
-impl<T: PartialEq + Copy> Iterator for TreeIteratorPointer<T> {
+impl<T: Eq + Copy + Hash> Iterator for TreeIteratorPointer<T> {
     type Item = T;
     fn next(&mut self) -> Option<T> {
         let result = self.tree.access(self.index as u64);
@@ -401,7 +399,7 @@ impl<T: PartialEq + Copy> Iterator for TreeIteratorPointer<T> {
     }
 }
 
-impl<T: PartialEq + Copy> IntoIterator for WaveletTreePointer<T> {
+impl<T: Eq + Copy + Hash> IntoIterator for WaveletTreePointer<T> {
     type Item = T;
     type IntoIter = TreeIteratorPointer<T>;
 
