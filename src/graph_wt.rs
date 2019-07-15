@@ -7,10 +7,10 @@ use bv::BitVec;
 pub trait GraphWithWT {
     /// Creates the bitmap and the WaveletTree from the underlying list (if not done yet)
     /// returns the 'nth_neighbor' of the 'node' or None if there is None
-    fn neighbor(&mut self, node: u64, nth_neighbor: u64) -> Option<u64>;
+    fn neighbor(&self, node: u64, nth_neighbor: u64) -> Option<u64>;
     /// Creates the bitmap and the WaveletTree from the underlying list (if not done yet)
     /// returns the 'nth_reverse_neighbor' of the 'node' or None if there is None
-    fn reverse_neigbor(&mut self, node: u64, nth_reverse_neighbor: u64) -> Option<u64>;
+    fn reverse_neigbor(&self, node: u64, nth_reverse_neighbor: u64) -> Option<u64>;
 }
 
 
@@ -21,6 +21,7 @@ pub struct WaveletTreeGraph<T: WaveletTree<u64>> {
 }
 
 /// This graph builder is used, because a once created Tree can't be modified effectively.
+#[derive(Clone)]
 pub struct WTGraphBuilder {
     size: usize,
     bit_vec: Vec<bool>,
@@ -122,13 +123,13 @@ impl <T: WaveletTree<u64>> GraphWithWT for WaveletTreeGraph<T> {
     /// let mut graph = w_builder.to_graph::<WaveletTreeCompact<u64>>();
     /// assert_eq!(Some(1), graph.neighbor(0, 1));
     /// ```
-    fn neighbor(&mut self, node: u64, nth_neighbor: u64) -> Option<u64> {
-        let l = self.bitmap.as_mut().unwrap().select(node + 1);
+    fn neighbor(&self, node: u64, nth_neighbor: u64) -> Option<u64> {
+        let l = self.bitmap.as_ref().unwrap().select(node +1);
         if l.is_none() {
             return None;
         }
 
-        let c = self.bitmap.as_mut().unwrap().select(node + 2);
+        let c = self.bitmap.as_ref().unwrap().select(node + 2);
         if c.is_none() {
             return None;
         }
@@ -138,12 +139,10 @@ impl <T: WaveletTree<u64>> GraphWithWT for WaveletTreeGraph<T> {
             return None;
         }
         // The node 'node' has no neighbor
-        if self.bitmap.as_mut().unwrap().rank_1(l.unwrap() + 1) > Some(node + 1) {
+        if self.bitmap.as_ref().unwrap().rank_1(l.unwrap() + 1) > Some(node + 1) {
             return None;
         }
-        self.wavelet_tree
-            .as_mut()
-            .unwrap()
+        self.wavelet_tree.as_ref().unwrap()
             .access(l.unwrap() + nth_neighbor - (node + 1))
     }
 
@@ -164,19 +163,18 @@ impl <T: WaveletTree<u64>> GraphWithWT for WaveletTreeGraph<T> {
     /// let mut graph = w_builder.to_graph::<WaveletTreeCompact<u64>>();
     /// assert_eq!(Some(0), graph.reverse_neigbor(1, 1));
     /// ```
-    fn reverse_neigbor(&mut self, node: u64, nth_reverse_neighbor: u64) -> Option<u64> {
+    fn reverse_neigbor(&self, node: u64, nth_reverse_neighbor: u64) -> Option<u64> {
         // get the index of the 'nth_reverse_neighbor' of 'node' in the adjacency list
         let p = self
-            .wavelet_tree
-            .as_mut()
+            .wavelet_tree.as_ref()
             .unwrap()
             .select(node, nth_reverse_neighbor);
         if p != None {
             // get the index of the 'nth_reverse_neighbor' in the bitmap
-            let index_in_bitmap = self.bitmap.as_mut().unwrap().select_0(p.unwrap() + 1);
+            let index_in_bitmap = self.bitmap.as_ref().unwrap().select_0(p.unwrap() + 1);
 
             // get the startnode of the edge to the 'node' (this ist the reverse neigbor)
-            let result = self.bitmap.as_mut().unwrap().rank(index_in_bitmap.unwrap());
+            let result = self.bitmap.as_ref().unwrap().rank(index_in_bitmap.unwrap());
             return Some(result.unwrap() - 1);
 
         } else {
